@@ -17,6 +17,9 @@ test('deployment contains static entry pages and no application API function', (
   const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
   assert.equal(config.functions, undefined);
   assert.equal(existsSync('api/index.js'), false);
+  for (const route of config.rewrites) assert.ok(existsSync(`dist${route.destination}`), `Missing route target: ${route.destination}`);
+  for (const route of config.redirects) assert.ok(config.rewrites.some(rewrite => rewrite.source === route.destination), `Unresolved redirect: ${route.destination}`);
+  for (const path of ['.env.local', 'ADMIN-CREDENTIALS.local.txt', 'api/index.js', 'supabase']) assert.equal(existsSync(`dist/${path}`), false, `Private or server file in deployment: ${path}`);
   for (const page of ['index','map','login','admin']) {
     const html = readFileSync(`dist/${page}.html`, 'utf8');
     for (const [, asset] of html.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^" ]*)?"/g)) assert.ok(existsSync(`dist${asset}`), asset);
