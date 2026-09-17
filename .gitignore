@@ -1,0 +1,31 @@
+# Repository-wide Python and local runtime hygiene
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/*.log
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/.coverage.*
+
+# Flask app runtime state
+**/data/issue_map.db
+**/data/uploads/
+**/data/archive/
+
+# JavaScript dependencies, secrets and SQLite sidecars
+node_modules/
+.env
+.env.*
+!.env.example
+**/data/issue_map.db-*
+
+dist/
+.vercel/
+.playwright-cli/
+output/
+**/upload-client.bundle.js
+
+ADMIN-CREDENTIALS.local.txt
+supabase/.temp/

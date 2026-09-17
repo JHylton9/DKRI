@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
+
+# Legacy top-level shell should not accumulate a second runtime copy
+/public/
+/data/

@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="document">
+	<name>Live Issues Coordinates</name>
+	<gx:CascadingStyle kml:id="__managed_style_05FAF834EE3F3AA68E98_highlight">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>4</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_05FAF834EE3F3AA68E98_normal">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>2.66667</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_05FAF834EE3F3AA68E98">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_05FAF834EE3F3AA68E98_normal</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_05FAF834EE3F3AA68E98_highlight</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="0AC6AE26F53F3AA68E51">
+		<name>Duke Street 1</name>
+		<LookAt>
+			<longitude>-76.79055654248697</longitude>
+			<latitude>17.96601001159878</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1066.213799162341</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79090247857332,17.9667983999569,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0C6DA6D3A63F3AA72383">
+		<name>Church Street 1</name>
+		<LookAt>
+			<longitude>-76.79055654248697</longitude>
+			<latitude>17.96601001159878</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1066.213799162341</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79196911863453,17.96695607483496,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="03269200243F3AA763D0">
+		<name>Church Street 2</name>
+		<LookAt>
+			<longitude>-76.79055654248697</longitude>
+			<latitude>17.96601001159878</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1066.213799162341</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79208441545738,17.96513249280842,0.0004209951194256156</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="094E905A453F3AA7E920">
+		<name>King Street 1</name>
+		<LookAt>
+			<longitude>-76.79249222840753</longitude>
+			<latitude>17.96677748767903</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094135857312</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79307182871972,17.96697676481635,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0182FEE6073F3AA82B43">
+		<name>King Street 2</name>
+		<LookAt>
+			<longitude>-76.79249222840753</longitude>
+			<latitude>17.96677748767903</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094135857312</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79328829872702,17.96439277903043,-1.414648398423424e-09</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="08417069083F3AA876D8">
+		<name>Orange Street 1</name>
+		<LookAt>
+			<longitude>-76.79432878699708</longitude>
+			<latitude>17.96672434921958</latitude>
+			<altitude>-7.073241992117119e-10</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094135472558</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79415997393012,17.9673111506754,-7.073241992117119e-10</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0582B32FCE3F3AA8A46E">
+		<name>Orange Street 2</name>
+		<LookAt>
+			<longitude>-76.79432878699708</longitude>
+			<latitude>17.96672434921958</latitude>
+			<altitude>-7.073241992117119e-10</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094135472558</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79423420532949,17.96644258824065,5.965572296151578e-06</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0B80493B0B3F3AA92538">
+		<name>Duke Street 2</name>
+		<LookAt>
+			<longitude>-76.79120731337379</longitude>
+			<latitude>17.96623943577185</latitude>
+			<altitude>-7.073241992117119e-10</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094134219357</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79101178713107,17.96568145768161,0.0007415120070564107</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0D762BAFD23F3AA972F8">
+		<name>East Street 1</name>
+		<LookAt>
+			<longitude>-76.7906486625771</longitude>
+			<latitude>17.96647856862158</latitude>
+			<altitude>1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094134010118</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.78981425330161,17.96700178924994,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="05769D155B3F3AA9AF5E">
+		<name>East Street 2</name>
+		<LookAt>
+			<longitude>-76.7906486625771</longitude>
+			<latitude>17.96647856862158</latitude>
+			<altitude>1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094134010118</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79000621635495,17.96607336869416,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="06F3EB58D73F3AAA12A0">
+		<name>Harbour Street 1</name>
+		<LookAt>
+			<longitude>-76.79323250287622</longitude>
+			<latitude>17.96613319941399</latitude>
+			<altitude>-1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094133728788</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79333026623598,17.96604020301937,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="08878479CC3F3AAA6170">
+		<name>Harbour Street 2</name>
+		<LookAt>
+			<longitude>-76.79224090264846</longitude>
+			<latitude>17.96609998447406</latitude>
+			<altitude>1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1033.094133743941</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79183170308546,17.96588741048441,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0715F188253F3AAB0EF0">
+		<name>Tower Street 2</name>
+		<LookAt>
+			<longitude>-76.79084158388281</longitude>
+			<latitude>17.96693271456807</latitude>
+			<altitude>-1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>872.5234755306801</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79226295128137,17.96728615019173,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0312DEBA963F3AAB47D8">
+		<name>Tower Street 1</name>
+		<LookAt>
+			<longitude>-76.79039924937848</longitude>
+			<latitude>17.96702808722375</latitude>
+			<altitude>-1.414648398423424e-09</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>872.523474600933</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.7905172048871,17.96722444259877,-7.073241992117119e-10</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0C09957A443F3AAC7103">
+		<name>Ocean Boulevard 1</name>
+		<LookAt>
+			<longitude>-76.79218434062027</longitude>
+			<latitude>17.96495991070547</latitude>
+			<altitude>2.372648293835766e-05</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1098.23534506536</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79419606822121,17.96371001908531,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="00884449D33F3AAD1ECF">
+		<name>Ocean Boulevard 2</name>
+		<LookAt>
+			<longitude>-76.79349646557391</longitude>
+			<latitude>17.965321025709</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1332.191434819357</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_05FAF834EE3F3AA68E98</styleUrl>
+		<Point>
+			<coordinates>-76.79227182418344,17.96347938169039,-7.073241992117119e-10</coordinates>
+		</Point>
+	</Placemark>
+</Document>
+</kml>

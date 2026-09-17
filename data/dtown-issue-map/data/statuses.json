@@ -1,0 +1,133 @@
+{
+  "items": {
+    "0AC6AE26F53F3AA68E51": {
+      "status": "fixed",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "2026-05-08T09:24:32Z",
+      "normalized_name": "duke-street-1",
+      "display_name": "Duke Street 1"
+    },
+    "0C6DA6D3A63F3AA72383": {
+      "status": "fixed",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "2026-05-08T16:05:00Z",
+      "normalized_name": "church-street-1",
+      "display_name": "Church Street 1"
+    },
+    "03269200243F3AA763D0": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "church-street-2",
+      "display_name": "Church Street 2"
+    },
+    "094E905A453F3AA7E920": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "king-street-1",
+      "display_name": "King Street 1"
+    },
+    "0182FEE6073F3AA82B43": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "king-street-2",
+      "display_name": "King Street 2"
+    },
+    "08417069083F3AA876D8": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "orange-street-1",
+      "display_name": "Orange Street 1"
+    },
+    "0582B32FCE3F3AA8A46E": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "orange-street-2",
+      "display_name": "Orange Street 2"
+    },
+    "0B80493B0B3F3AA92538": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "duke-street-2",
+      "display_name": "Duke Street 2"
+    },
+    "0D762BAFD23F3AA972F8": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "east-street-1",
+      "display_name": "East Street 1"
+    },
+    "05769D155B3F3AA9AF5E": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "east-street-2",
+      "display_name": "East Street 2"
+    },
+    "06F3EB58D73F3AAA12A0": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "harbour-street-1",
+      "display_name": "Harbour Street 1"
+    },
+    "08878479CC3F3AAA6170": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "harbour-street-2",
+      "display_name": "Harbour Street 2"
+    },
+    "0715F188253F3AAB0EF0": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "tower-street-2",
+      "display_name": "Tower Street 2"
+    },
+    "0312DEBA963F3AAB47D8": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "tower-street-1",
+      "display_name": "Tower Street 1"
+    },
+    "0C09957A443F3AAC7103": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "ocean-boulevard-1",
+      "display_name": "Ocean Boulevard 1"
+    },
+    "00884449D33F3AAD1ECF": {
+      "status": "pending",
+      "notes": "",
+      "reported_by": "",
+      "last_updated": "",
+      "normalized_name": "ocean-boulevard-2",
+      "display_name": "Ocean Boulevard 2"
+    }
+  },
+  "updated_at": "2026-05-13T00:38:44Z"
+}

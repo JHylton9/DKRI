@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/map", "destination": "/map.html" },
+    { "source": "/portal", "destination": "/login.html" },
+    { "source": "/portal/dashboard", "destination": "/admin.html" }
+  ],
+  "redirects": [
+    { "source": "/admin", "destination": "/portal/dashboard", "permanent": false },
+    { "source": "/login", "destination": "/portal", "permanent": false }
+  ]
+}
