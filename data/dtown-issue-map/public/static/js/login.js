@@ -1,5 +1,6 @@
 import { adminSession, signIn } from './backend.js';
 import { handleAction } from './shared.js';
+import './analytics.js';
 
 document.getElementById('login-form').addEventListener('submit', event => handleAction(event, async () => {
   await signIn(document.getElementById('username').value.trim(), document.getElementById('password').value);

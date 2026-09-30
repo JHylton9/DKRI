@@ -1,6 +1,7 @@
 import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, reviewReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
+import './analytics.js';
 const $ = id => document.getElementById(id);
 let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='';
 let total=0, queueRequest=0, detailRequest=0, searchTimer;

@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { loadMapData, locationHistory } from './backend.js';
 import { escapeHtml as h, formatDate } from './shared.js';
 import { filterLocations } from './map-model.js';
+import './analytics.js';
 
 const $ = id => document.getElementById(id);
 const colors = { pending: '#986a2d', down: '#a3292e', fixed: '#32694b', empty: '#686c72' };

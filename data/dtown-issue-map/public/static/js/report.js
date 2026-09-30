@@ -1,5 +1,6 @@
 import { loadMapData, submitReport as saveReport } from './backend.js';
 import { escapeHtml, handleAction } from './shared.js';
+import './analytics.js';
 
 
 let locations = [];
