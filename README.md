@@ -18,7 +18,7 @@ Existing QR links to `/?location_id=CODE` still open a preselected reporting for
 
 Open `/portal` and sign in as **jaydonhylton17@gmail.com** with your existing password. The initial password was saved in `ADMIN-CREDENTIALS.local.txt` in the original DTownAppv2 setup folder; it is excluded from Git and deployment. Change your password in the **Password** section after signing in.
 
-Supabase Auth stores passwords and sessions; the protected `admin_members` table grants operational access. Owners can invite accounts and assign Owner or Administrator access. Administrators can operate reports and locations but cannot manage accounts. No credentials are embedded in the site. Contact information and internal notes are only readable by administrators.
+Supabase Auth stores passwords and sessions; the protected `admin_members` table grants operational access. Only the primary `jaydonhylton17@gmail.com` account can open Accounts and Password, register accounts directly, or change access. Administrators can operate reports and locations but cannot manage accounts. No credentials are embedded in the site. Contact information and internal notes are only readable by administrators.
 
 ## Location publishing
 

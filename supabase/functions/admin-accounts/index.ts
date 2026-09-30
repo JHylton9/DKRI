@@ -4,6 +4,7 @@ const url=Deno.env.get('SUPABASE_URL')!;
 const publishable='sb_publishable_yIp0_PrdNKyFzlrCe4-fPg_VUosGs29';
 const secret=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}').default;
 const service=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
+const primaryOwner='jaydonhylton17@gmail.com';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const fail=(message:string,status=400)=>Object.assign(new Error(message),{status});
 
@@ -18,7 +19,7 @@ Deno.serve(async req=>{
     if(userError||!user)throw fail('Sign in again to continue.',401);
     const {data:member,error:memberError}=await service.from('admin_members').select('role').eq('user_id',user.id).maybeSingle();
     if(memberError)throw memberError;
-    if(member?.role!=='owner')throw fail('Owner access is required to manage accounts.',403);
+    if(member?.role!=='owner'||user.email?.toLowerCase()!==primaryOwner)throw fail('This account cannot manage accounts.',403);
     const body=await req.json();
     if(body.action==='list'){
       const [{data:members,error:membersError},{data:users,error:usersError}]=await Promise.all([
@@ -32,17 +33,19 @@ Deno.serve(async req=>{
         role:roles.get(account.id)?.role||null,access_updated_at:roles.get(account.id)?.updated_at||null,
       })).sort((a,b)=>a.email.localeCompare(b.email)),current_user_id:user.id});
     }
-    if(body.action==='invite'){
+    if(body.action==='register'){
       const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
+      const password=typeof body.password==='string'?body.password:'';
       const role=body.role;
       if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))throw fail('Enter a valid email address.');
+      if(password.length<8||password.length>128)throw fail('Use an initial password between 8 and 128 characters.');
       if(!['owner','administrator'].includes(role))throw fail('Choose a valid account role.');
-      const {data,error}=await service.auth.admin.inviteUserByEmail(email);
+      const {data,error}=await service.auth.admin.createUser({email,password,email_confirm:true});
       if(error)throw error;
-      const invited=data.user;
-      const {error:accessError}=await service.from('admin_members').upsert({user_id:invited.id,role,updated_by:user.id});
-      if(accessError){await service.auth.admin.deleteUser(invited.id);throw accessError;}
-      await service.from('admin_activity').insert({actor_id:user.id,action:'Account invited',target_id:invited.id,detail:{email,role}});
+      const registered=data.user;
+      const {error:accessError}=await service.from('admin_members').upsert({user_id:registered.id,role,updated_by:user.id});
+      if(accessError){await service.auth.admin.deleteUser(registered.id);throw accessError;}
+      await service.from('admin_activity').insert({actor_id:user.id,action:'Account registered',target_id:registered.id,detail:{email,role}});
       return reply({success:true});
     }
     if(body.action==='set_role'){

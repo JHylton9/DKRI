@@ -70,3 +70,9 @@ test('admin location editor preserves immutable location codes', () => {
   assert.match(adminHtml,/id="edit-location-code" disabled/);
   assert.match(adminSource,/await updateLocation\(\{id,name:/);
 });
+
+test('public navigation routes explicitly to map and reporting', () => {
+  const mapHtml=readFileSync('data/dtown-issue-map/public/map.html','utf8');
+  assert.match(mapHtml,/class="brand" href="\/map"/);
+  assert.match(mapHtml,/class="button button--primary" href="\/report">Report an issue/);
+});

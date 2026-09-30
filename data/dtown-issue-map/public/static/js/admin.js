@@ -1,4 +1,4 @@
-import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, inviteAccount, setAccountRole, signOut, changePassword } from './backend.js';
+import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
 const $ = id => document.getElementById(id);
@@ -77,7 +77,7 @@ async function renderAccounts() {
 }
 async function section() {
   const requested=location.hash.slice(1);
-  const allowed=['reports','locations','activity','password',...(currentUser?.canManageAccounts?['accounts']:[])];
+  const allowed=['reports','locations','activity',...(currentUser?.canManageAccounts?['accounts','password']:[])];
   const name=allowed.includes(requested)?requested:'reports';
   document.querySelectorAll('[data-panel]').forEach(panel=>panel.hidden=panel.dataset.panel!==name);
   document.querySelectorAll('[data-section]').forEach(link=>link.dataset.section===name?link.setAttribute('aria-current','page'):link.removeAttribute('aria-current'));
@@ -154,10 +154,10 @@ function bind() {
   });
   $('imports-more').onclick=event=>buttonAction(event.currentTarget,()=>renderImports());
   $('activity-more').onclick=event=>buttonAction(event.currentTarget,()=>renderActivity());
-  $('invite-account-form').onsubmit=event=>handleAction(event,async()=>{
-    await inviteAccount($('invite-email').value,$('invite-role').value);
-    $('invite-account-form').reset();await renderAccounts();activityLoaded=false;
-    message('accounts-message','Invitation sent. Access is ready when the recipient signs in.');
+  $('register-account-form').onsubmit=event=>handleAction(event,async()=>{
+    await registerAccount($('register-email').value,$('register-password').value,$('register-role').value);
+    $('register-account-form').reset();await renderAccounts();activityLoaded=false;
+    message('accounts-message','Account registered and ready to sign in.');
   },'accounts-message');
   $('accounts-table-body').onclick=event=>{
     const button=event.target.closest('[data-save-account]');if(!button)return;
@@ -190,6 +190,7 @@ async function boot() {
     currentUser=await adminSession();
     if(!currentUser) {location.replace('/portal');return;}
     document.querySelector('[data-section="accounts"]').hidden=!currentUser.canManageAccounts;
+    document.querySelector('[data-section="password"]').hidden=!currentUser.canManageAccounts;
     $('admin-identity').textContent=currentUser.email+' · '+(currentUser.adminRole==='owner'?'Owner':'Administrator');
     $('password-username').value=currentUser.email;
     await reloadQueue();ready=true;await section();
