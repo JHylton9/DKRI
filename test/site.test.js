@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { parseKml } from '../data/dtown-issue-map/public/static/js/model.js';
+import { filterLocations, importChanges } from '../data/dtown-issue-map/public/static/js/map-model.js';
 
 test('fixed-location KML parsing rejects unsafe or invalid location inventories', () => {
   const points = parseKml(readFileSync('data/dtown-issue-map/data/issues.kml', 'utf8'));
@@ -20,7 +21,7 @@ test('deployment contains static entry pages and no application API function', (
   for (const route of config.rewrites) assert.ok(existsSync(`dist${route.destination}`), `Missing route target: ${route.destination}`);
   for (const route of config.redirects) assert.ok(config.rewrites.some(rewrite => rewrite.source === route.destination), `Unresolved redirect: ${route.destination}`);
   for (const path of ['.env.local', 'ADMIN-CREDENTIALS.local.txt', 'api/index.js', 'supabase']) assert.equal(existsSync(`dist/${path}`), false, `Private or server file in deployment: ${path}`);
-  for (const page of ['index','map','login','admin']) {
+  for (const page of ['index','map','report','login','admin']) {
     const html = readFileSync(`dist/${page}.html`, 'utf8');
     for (const [, asset] of html.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^" ]*)?"/g)) assert.ok(existsSync(`dist${asset}`), asset);
   }
@@ -28,4 +29,20 @@ test('deployment contains static entry pages and no application API function', (
     const source = readFileSync(`data/dtown-issue-map/public/static/js/${page}.js`, 'utf8');
     assert.equal(source.includes('API_BASE'), false, `${page} must not call the removed application server`);
   }
+});
+
+test('map filters combine layers, search, categories and inclusive latest-report dates', () => {
+  const locations = [
+    { id: 'A', name: 'Church Street', report_count: 1, status: 'fixed', issue_types: ['Blocked drain'], latest_report_at: '2026-09-29T12:00:00Z', is_active: true },
+    { id: 'B', name: 'King Street', report_count: 0, status: 'pending', issue_types: [], latest_report_at: null, is_active: true },
+    { id: 'C', name: 'Old location', report_count: 1, status: 'pending', issue_types: ['Lighting issue'], latest_report_at: '2026-09-28T12:00:00Z', is_active: false },
+  ];
+  const defaults = { query: '', status: 'all', category: 'all', from: '', to: '', reports: true, empty: true };
+  assert.equal(filterLocations(locations, { ...defaults, query: 'CHURCH', category: 'Blocked drain', from: '2026-09-29', to: '2026-09-29' })[0].id, 'A');
+  assert.equal(filterLocations(locations, { ...defaults, reports: false })[0].id, 'B');
+  assert.deepEqual(filterLocations(locations, { ...defaults, status: 'pending' }).map(row => row.id), ['C'], 'Unreported locations must not masquerade as pending reports');
+  assert.equal(filterLocations(locations, { ...defaults, from: '2026-09-30', to: '2026-09-29' }).length, 0);
+  assert.deepEqual(importChanges([{id:'A'},{id:'C'}], locations), { added: 1, retained: 1, archived: 1 });
+  const eveningReport = [{ ...locations[0], latest_report_at: '2026-09-30T02:00:00Z' }];
+  assert.equal(filterLocations(eveningReport, { ...defaults, from: '2026-09-29', to: '2026-09-29' }).length, 1, 'Date filters use the same Jamaica calendar date as report labels');
 });

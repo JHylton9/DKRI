@@ -1,6 +1,6 @@
 {
-  "name": "dtown-app",
-  "version": "2.0.0",
+  "name": "dkri-map",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,9 +14,9 @@
     "test:live": "node --env-file-if-exists=.env.local scripts/check-supabase.js"
   },
   "dependencies": {
-    "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
-    "fast-xml-parser": "^5.11.1"
+    "fast-xml-parser": "^5.11.1",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

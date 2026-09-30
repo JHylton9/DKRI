@@ -46,8 +46,8 @@ Success means the public form is simple enough to complete quickly in the field,
 
 ### Public map behavior
 - Only active locations are shown publicly.
-- Public users can filter visible locations by `all`, `pending`, `down`, or `fixed`.
-- Each location shows aggregate counts such as total reports, open reports, and photo count.
+- Public users can search locations and combine layer, status, issue category, and latest-report date filters.
+- Each location shows total and open report counts; selecting it loads paged report history and photos.
 - Each location popup or list view links back into the public reporting form with the location preselected.
 - Public history includes report description, issue types, status, submitted timestamp, and public photo URLs.
 - Private fields such as reporter contact details and admin notes must never appear in the public payload.
@@ -58,7 +58,8 @@ Success means the public form is simple enough to complete quickly in the field,
 - Admins can search and filter the report queue.
 - Admins can review per-report details including contact info, photos, status, and admin notes.
 - Admins can change a report status only to `pending`, `down`, or `fixed`.
-- Admins can upload a replacement KML file to re-sync the fixed location list.
+- Admins validate and preview a replacement KML before explicitly publishing the fixed location list.
+- Each published inventory includes a restorable snapshot; admin reviews and publications appear in the activity log.
 - KML replacement must preserve report history while marking missing former locations inactive instead of deleting them.
 
 ## Derived Status Rules
@@ -122,10 +123,11 @@ This list is product-configured, not user-generated. If issue categories change 
 4. Full case-management workflow with assignments, SLA timers, or escalations
 5. Automatic notifications by email or SMS
 6. Bulk admin editing beyond KML refresh and per-report review
-7. Cloud-native storage in the current implementation
 
-## Future-facing Implementation Direction
-The static HTML and JavaScript application preserves the existing visual design. Supabase provides Postgres, Auth, Storage and the public submission Edge Function. Vercel serves static files only. Existing local history has been migrated; the root README documents deployment and admin access.
+## Current Implementation
+The static HTML and JavaScript application follows the supplied FireMap interface specification. The public map is the home screen, with a 304px desktop sidebar and a mobile bottom sheet. Public reporting lives at /report and staff sign-in at /portal. System fonts, light warm surfaces, thin borders, restrained red accents and 44px controls support field use.
+
+Supabase provides Postgres, Auth, Storage and the validated public submission Edge Function. Public map summaries respect RLS; report history loads on demand. Staff reports use server-side search and 20-row pagination. Inventory snapshots and client-read-only activity records support safe operational changes. Vercel serves the npm-built static assets without an application server. Existing history is preserved.
 
 ## Brand Personality
 The product should feel clear, responsive, and grounded. It should communicate civic trust, practical competence, and calm operational control rather than startup novelty or overly decorative polish.

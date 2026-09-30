@@ -1,200 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Issue Review Admin</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/dkri-mini-logo-symbol.png?v=2">
-  <link rel="shortcut icon" href="/static/images/dkri-mini-logo-symbol.png?v=2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body class="shell shell--admin">
-  <header class="site-header">
-    <div class="site-ribbon">
-      <div class="site-ribbon__inner">
-        <a class="site-ribbon__brand" href="/" aria-label="Downtown Kingston home">
-          <img class="site-ribbon__logo" src="/static/images/dkri-colour-logo.png" alt="Downtown Kingston logo">
-        </a>
-
-        <nav class="site-ribbon__nav" aria-label="Primary">
-          <a class="site-ribbon__nav-link" href="/">Report</a>
-          <a class="site-ribbon__nav-link" href="/map">Map</a>
-          <a class="site-ribbon__nav-link is-active" href="/admin">Admin</a>
-        </nav>
-
-        <div class="site-ribbon__utility">
-          <a class="site-ribbon__utility-link" href="/map">Public map</a>
-          <button class="site-ribbon__button site-ribbon__button--button" id="logout-button" type="button">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <header class="hero hero--admin">
-    <div class="hero__branding">
-      <div class="hero__content">
-        <div class="hero__copy">
-          <span class="section-kicker">3. Admin Dashboard</span>
-          <p class="eyebrow">Admin Review</p>
-          <h1>Review reports, update status, and refresh location data</h1>
-          <p class="hero__text">
-            Each location can now hold multiple reports and multiple photos, so this screen is focused on reviewing report history rather than editing one flat point status.
-          </p>
-          <div class="meta-strip">
-            <span>Review reports fast</span>
-            <span>Keep location history intact</span>
-            <span>Update the public map with confidence</span>
-          </div>
-        </div>
-
-        <aside class="hero__aside">
-          <img class="hero__logo hero__logo--partner" src="/static/images/dkri-colour-logo.png" alt="DKRI logo">
-          <div class="hero__aside-copy">
-            <p class="eyebrow">Access Scope</p>
-            <p class="hero__aside-text">Admin access is reserved for staff maintaining issue status, uploaded photos, and the fixed-location data set.</p>
-          </div>
-        </aside>
-      </div>
-    </div>
-  </header>
-
-  <main class="page-grid page-grid--admin">
-    <section class="card card--full" id="admin-warning" hidden></section>
-
-    <aside class="card admin-rail">
-      <div class="admin-rail__brand">
-        <img class="site-ribbon__logo" src="/static/images/dkri-colour-logo.png" alt="Downtown Kingston logo">
-      </div>
-
-      <div class="card__header card__header--inverse">
-        <p class="eyebrow">Admin Tools</p>
-        <h2>Reports</h2>
-        <p>Review, update, and manage issue reports while keeping the public map in sync.</p>
-      </div>
-
-      <div class="metric-row metric-row--stack" id="admin-metrics"></div>
-
-      <div class="admin-upload">
-        <div class="admin-upload__panel">
-          <div class="card__header admin-upload__header">
-            <p class="eyebrow">Location Import</p>
-            <h2>Refresh the master map</h2>
-            <p>Upload a replacement KML to re-sync the fixed location table.</p>
-          </div>
-
-          <form id="kml-upload-form" class="stack-form">
-            <input class="file-picker__input" id="kml-file" type="file" accept=".kml,application/vnd.google-earth.kml+xml" required>
-            <label class="file-picker" for="kml-file">
-              <span class="file-picker__button">Choose KML</span>
-              <span class="file-picker__name" id="kml-file-name">No file selected</span>
-            </label>
-            <small class="helper-text helper-text--inverse">Use the latest exported KML to replace the current public location set.</small>
-            <button class="button button--wide" type="submit">Upload KML</button>
-            <p class="form-message form-message--inverse" id="kml-message"></p>
-          </form>
-        </div>
-      </div>
-    </aside>
-
-    <section class="card card--table admin-queue">
-      <div class="card__header">
-        <p class="eyebrow">Incoming Reports</p>
-        <h2>Report queue</h2>
-        <p>Select any report to review the full location, contact details, photo set, and admin notes.</p>
-      </div>
-
-      <div class="toolbar">
-        <input id="search-input" type="search" placeholder="Search by location or issue type">
-        <select id="status-filter">
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="down">Down</option>
-          <option value="fixed">Fixed</option>
-        </select>
-      </div>
-
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Location</th>
-              <th>Issue Types</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Contact</th>
-            </tr>
-          </thead>
-          <tbody id="reports-table-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card card--editor admin-detail">
-      <div class="card__header">
-        <p class="eyebrow">Selected Report</p>
-        <h2>Review details</h2>
-        <p>Update the report status and add admin notes without losing the original submission details.</p>
-      </div>
-
-      <form id="report-status-form" class="stack-form">
-        <input id="selected-report-id" type="hidden">
-
-        <label>
-          <span>Location</span>
-          <input id="selected-location-name" type="text" readonly>
-        </label>
-
-        <label>
-          <span>Issue Types</span>
-          <input id="selected-issue-types" type="text" readonly>
-        </label>
-
-        <label>
-          <span>Reporter Contact</span>
-          <textarea id="selected-contact" rows="3" readonly></textarea>
-        </label>
-
-        <label>
-          <span>Original Description</span>
-          <textarea id="selected-description" rows="5" readonly></textarea>
-        </label>
-
-        <label>
-          <span>Status</span>
-          <select id="selected-status">
-            <option value="pending">Pending</option>
-            <option value="down">Down</option>
-            <option value="fixed">Fixed</option>
-          </select>
-        </label>
-
-        <label>
-          <span>Admin Notes</span>
-          <textarea id="selected-admin-notes" rows="5" placeholder="Add review notes, resolution details, or follow-up actions."></textarea>
-        </label>
-
-        <div>
-          <span class="label-inline">Photos</span>
-          <div class="photo-grid" id="selected-photo-grid"></div>
-        </div>
-
-        <button class="button button--wide" type="submit">Save Review Update</button>
-        <p class="form-message" role="status" aria-live="polite" id="status-message"></p>
-      </form>
-    </section>
-    <section class="card card--full">
-    <div class="card__header"><h2>Account password</h2></div>
-    <form id="password-form" class="stack-form">
-      <label><span>New password</span><input id="new-password" type="password" autocomplete="new-password" minlength="12" required></label>
-      <button class="button" type="submit">Update password</button>
-      <p id="password-message" class="form-message" role="status" aria-live="polite"></p>
-    </form>
-  </section>
-</main>
-
-  <script type="module" src="/static/js/admin.js"></script>
-</body>
-</html>
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex"><title>Administration · DKRI</title><link rel="icon" href="/static/images/dkri-mini-logo-symbol.png"><link rel="stylesheet" href="/static/css/styles.css"></head>
+<body class="admin-page"><a class="skip-link" href="#admin-content">Skip to content</a>
+<header class="app-header"><a class="brand" href="/"><img src="/static/images/dkri-mini-logo-symbol.png" alt=""><span>DKRI<span class="brand-subtitle">Administration</span></span></a><div class="account-controls"><span id="admin-identity" class="metadata">Checking session…</span><button id="logout-button">Sign out</button></div></header>
+<div class="admin-layout"><nav class="admin-nav" aria-label="Administration"><a href="#reports" data-section="reports" aria-current="page">Reports</a><a href="#locations" data-section="locations">Locations</a><a href="#activity" data-section="activity">Activity</a><a href="#password" data-section="password">Password</a><a class="public-map-link" href="/">Public map ↗</a></nav>
+<main id="admin-content" class="admin-content"><p id="admin-warning" class="form-message is-error" role="alert" hidden></p>
+<section data-panel="reports"><div class="section-heading page-heading"><div><h1>Reports</h1><p id="queue-summary" class="muted">Loading report queue…</p></div><button id="refresh-reports">Refresh</button></div>
+<div class="toolbar"><label>Search reports<input id="search-input" type="search" placeholder="Location, issue or description"></label><label>Status<select id="status-filter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="down">Down</option><option value="fixed">Fixed</option></select></label></div>
+<div class="table-wrap"><table class="data-table"><caption class="sr-only">Report queue</caption><thead><tr><th scope="col">Location</th><th scope="col">Issue types</th><th scope="col">Status</th><th scope="col">Submitted</th><th scope="col">Review</th></tr></thead><tbody id="reports-table-body"></tbody></table></div>
+<div class="pagination"><button id="queue-previous">Previous</button><span id="queue-page" class="metadata" role="status"></span><button id="queue-next">Next</button></div>
+<section id="review-panel" class="review-panel" hidden aria-labelledby="review-title"><div class="section-heading"><h2 id="review-title">Review report</h2><button id="close-review" type="button">Close</button></div>
+<form id="report-status-form" class="stack-form"><input id="selected-report-id" type="hidden"><dl id="report-facts" class="detail-list"></dl><div id="selected-photo-grid" class="photo-grid"></div><div class="two-columns"><label>Status<select id="selected-status"><option value="pending">Pending</option><option value="down">Down</option><option value="fixed">Fixed</option></select></label><label>Internal notes<textarea id="selected-admin-notes" rows="4" maxlength="10000"></textarea></label></div><div><button class="button button--primary" type="submit" data-busy="Saving…">Save review</button></div><p id="status-message" class="form-message" role="status" aria-live="polite"></p></form></section>
+</section>
+<section data-panel="locations" hidden><header class="page-heading"><h1>Locations</h1><p class="muted">Publish a KML inventory. Existing reports stay linked to their location codes.</p></header>
+<form id="kml-upload-form" class="stack-form narrow-form"><label>Location file<input id="kml-file" type="file" accept=".kml,application/vnd.google-earth.kml+xml" required></label><p class="metadata">KML points only. Up to 2 MB and 10,000 unique location codes.</p><div><button type="submit" data-busy="Validating…">Validate and preview</button></div><p id="kml-message" class="form-message" role="status" aria-live="polite"></p></form>
+<section id="import-preview" class="import-preview" hidden><h2>Ready to publish</h2><p id="import-summary"></p><p class="muted">The preview shows the first 10 locations. Missing locations will be archived, with their reports preserved.</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Code</th><th>Location</th><th>Latitude</th><th>Longitude</th></tr></thead><tbody id="preview-rows"></tbody></table></div><div class="actions"><button class="button button--primary" id="publish-import">Publish inventory</button><button id="cancel-import">Cancel</button></div></section>
+<section class="admin-section"><h2>Version history</h2><p class="muted">Restoring a version publishes a new copy of its location inventory.</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Source</th><th>Published</th><th>Locations</th><th>State</th><th>Action</th></tr></thead><tbody id="import-history"></tbody></table></div><div class="pagination"><button id="imports-more" hidden>Load older versions</button></div></section>
+</section>
+<section data-panel="activity" hidden><header class="page-heading"><h1>Activity</h1><p class="muted">Report reviews, internal-note changes and published location inventories.</p></header><div class="table-wrap"><table class="data-table"><thead><tr><th>Time</th><th>Action</th><th>Account ID</th><th>Target</th></tr></thead><tbody id="activity-rows"></tbody></table></div><button id="activity-more" hidden>Load older activity</button></section>
+<section data-panel="password" hidden><header class="page-heading"><h1>Password</h1><p class="muted">Change the password for your signed-in account.</p></header><form id="password-form" class="stack-form narrow-form"><input id="password-username" type="hidden" name="username" autocomplete="username"><label>New password<input id="new-password" type="password" autocomplete="new-password" minlength="12" required></label><label>Confirm password<input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required></label><p class="metadata">Use at least 12 characters.</p><div><button class="button button--primary" type="submit" data-busy="Updating…">Update password</button></div><p id="password-message" class="form-message" role="status" aria-live="polite"></p></form></section>
+</main></div>
+<dialog id="restore-dialog"><form method="dialog"><h2>Restore this inventory?</h2><p id="restore-description"></p><p class="muted">The public map will use these locations. All report history will be preserved.</p><div class="actions"><button value="cancel">Cancel</button><button id="confirm-restore" class="button button--primary" value="restore">Restore and publish</button></div></form></dialog>
+<script type="module" src="/static/js/admin.js"></script></body></html>

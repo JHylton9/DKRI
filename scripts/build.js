@@ -7,8 +7,13 @@ rmSync(output, { recursive: true, force: true });
 const source = 'data/dtown-issue-map/public';
 mkdirSync('dist/static', { recursive: true });
 for (const folder of ['css', 'images']) cpSync(`${source}/static/${folder}`, `dist/static/${folder}`, { recursive: true });
-for (const page of ['index', 'map', 'login', 'admin']) cpSync(`${source}/${page}.html`, `dist/${page}.html`);
-for (const [route,page] of [['map','map'],['portal','login'],['portal/dashboard','admin']]) {
+mkdirSync('dist/static/vendor/leaflet', { recursive: true });
+cpSync('node_modules/leaflet/dist/leaflet.css', 'dist/static/vendor/leaflet/leaflet.css');
+cpSync('node_modules/leaflet/dist/images', 'dist/static/vendor/leaflet/images', { recursive: true });
+cpSync('node_modules/leaflet/LICENSE', 'dist/static/vendor/leaflet/LICENSE');
+for (const page of ['map', 'report', 'login', 'admin']) cpSync(`${source}/${page}.html`, `dist/${page}.html`);
+cpSync(`${source}/map.html`, 'dist/index.html');
+for (const [route,page] of [['map','map'],['report','report'],['portal','login'],['portal/dashboard','admin']]) {
   mkdirSync(`dist/${route}`, { recursive: true });
   cpSync(`${source}/${page}.html`, `dist/${route}/index.html`);
 }

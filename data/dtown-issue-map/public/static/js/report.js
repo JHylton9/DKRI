@@ -1,4 +1,4 @@
-import { loadData, submitReport as saveReport } from './backend.js';
+import { loadMapData, submitReport as saveReport } from './backend.js';
 import { escapeHtml, handleAction } from './shared.js';
 
 
@@ -122,13 +122,13 @@ function renderLocationSummary() {
   const location = getSelectedLocation();
   document.getElementById("location-title").textContent = location ? location.name : "Choose a location";
   document.getElementById("location-summary").textContent = location
-    ? location.description || "This fixed Downtown Kingston location can hold multiple reports over time."
-    : "The form will link your report to one of the mapped Downtown Kingston locations.";
+    ? location.description || location.latitude.toFixed(6) + ', ' + location.longitude.toFixed(6)
+    : "Select a mapped location for your report.";
 
   const pills = document.getElementById("location-pills");
   pills.innerHTML = location
     ? `
-      ${statusPill(location.status)}
+      ${location.report_count ? statusPill(location.status) : '<span class="pill">No reports</span>'}
       <span class="pill">Code ${escapeHtml(location.code_label || location.id)}</span>
     `
     : "";
@@ -181,7 +181,7 @@ function applyLocationPrefill() {
   prefill.textContent = "Location preselected from a map or QR-linked entry. You can still change it if needed.";
 }
 
-async function fetchFormData() { return loadData(); }
+async function fetchFormData() { return loadMapData(); }
 
 async function submitReport(event) {
   event.preventDefault();
@@ -202,12 +202,25 @@ async function submitReport(event) {
     setMessage("Choose up to 5 photos per report.", "error");
     return;
   }
+  if (photoFiles.some(file => file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))) {
+    setMessage('Use JPG, PNG, WEBP or GIF photos, each 10 MB or smaller.', 'error');
+    return;
+  }
+  if (formData.get('contact_method') === 'phone' && String(formData.get('contact_value')).replace(/\D/g, '').length < 7) {
+    setMessage('Enter a phone number with at least 7 digits.', 'error');
+    return;
+  }
 
   formData.delete("issue_types");
   checkedIssueTypes.forEach((issueType) => formData.append("issue_types", issueType));
 
   try {
     const payload = await saveReport(formData);
+    const reportedLocation = getSelectedLocation();
+    if (reportedLocation) {
+      reportedLocation.report_count++;
+      if (reportedLocation.status !== 'down') reportedLocation.status = 'pending';
+    }
 
     const keepLocationId = document.getElementById("location-select").value;
     form.reset();
