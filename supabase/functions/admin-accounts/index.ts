@@ -19,8 +19,23 @@ Deno.serve(async req=>{
     if(userError||!user)throw fail('Sign in again to continue.',401);
     const {data:member,error:memberError}=await service.from('admin_members').select('role').eq('user_id',user.id).maybeSingle();
     if(memberError)throw memberError;
-    if(member?.role!=='owner'||user.email?.toLowerCase()!==primaryOwner)throw fail('This account cannot manage accounts.',403);
     const body=await req.json();
+    if(!member)throw fail('Administrator access is required.',403);
+    if(body.action==='delete_report'){
+      const reportId=typeof body.report_id==='string'?body.report_id:'';
+      if(!reportId||reportId.length>500)throw fail('Choose a valid report.');
+      const [{data:report,error:reportError},{data:photos,error:photosError}]=await Promise.all([
+        service.from('issue_reports').select('id,location_id').eq('id',reportId).maybeSingle(),
+        service.from('issue_photos').select('storage_key').eq('report_id',reportId),
+      ]);
+      if(reportError)throw reportError;if(photosError)throw photosError;
+      if(!report)throw fail('Report not found.',404);
+      if(photos.length){const {error}=await service.storage.from('report-photos').remove(photos.map(photo=>photo.storage_key));if(error)throw error;}
+      const {error:deleteError}=await service.from('issue_reports').delete().eq('id',reportId);if(deleteError)throw deleteError;
+      await service.from('admin_activity').insert({actor_id:user.id,action:'Report deleted',target_id:reportId,detail:{location_id:report.location_id,photo_count:photos.length}});
+      return reply({success:true});
+    }
+    if(member.role!=='owner'||user.email?.toLowerCase()!==primaryOwner)throw fail('This account cannot manage accounts.',403);
     if(body.action==='list'){
       const [{data:members,error:membersError},{data:users,error:usersError}]=await Promise.all([
         service.from('admin_members').select('user_id,role,created_at,updated_at').order('created_at'),

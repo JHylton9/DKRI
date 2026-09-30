@@ -1,10 +1,12 @@
-import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
+import L from 'leaflet';
+import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, deleteReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
 const $ = id => document.getElementById(id);
 let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='';
 let total=0, queueRequest=0, detailRequest=0, searchTimer;
 let importsLoaded=false, activityLoaded=false, accountsLoaded=false, locationEditorLoaded=false, ready=false, restoreBusy=false, currentUser=null;
+let editorMap=null,editorMarker=null;
 function message(id,text,error=false) { $(id).textContent=text; $(id).className='form-message '+(error?'is-error':'is-success'); }
 function badge(status) { return '<span class="status-badge status-badge--'+h(status)+'">'+h(status)+'</span>'; }
 function issueLabel(report) { return report.issue_types.map(type=>type==='Other'&&report.issue_other?'Other: '+report.issue_other:type).join(', '); }
@@ -21,6 +23,7 @@ async function selectReport(id, focus=true) {
   try { report=await loadReportDetail(id); } catch(error) { warning(error); return; }
   if(request!==detailRequest) return;
   selectedId=id; $('review-panel').hidden=false; $('selected-report-id').value=id;
+  $('delete-report-button').hidden=false;
   $('report-facts').innerHTML='<dt>Location</dt><dd>'+h(report.location_name)+'</dd><dt>Report ID</dt><dd><code>'+h(report.id)+'</code></dd><dt>Submitted</dt><dd>'+h(formatDate(report.submitted_at))+'</dd><dt>Issue types</dt><dd>'+h(issueLabel(report))+'</dd><dt>Description</dt><dd>'+h(report.description||'Photo provided without a description.')+'</dd><dt>Contact</dt><dd>'+h(report.contact_value||'No contact details provided.')+'</dd>';
   $('selected-status').value=report.status; $('selected-admin-notes').value=report.admin_notes||'';
   $('selected-followup').value=''; $('selected-followups').innerHTML=followups(report.followups);
@@ -45,13 +48,33 @@ async function renderImports(reset=false) {
 }
 function populateLocationEditor(id='') {
   const select=$('edit-location-select');
-  select.innerHTML='<option value="">Choose a location</option>'+locations.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(location=>'<option value="'+h(location.id)+'">'+h(location.name)+(location.is_active?'':' (archived)')+'</option>').join('');
+  const query=$('edit-location-search').value.trim().toLowerCase();
+  const filtered=locations.filter(location=>!query||(location.name+' '+location.id).toLowerCase().includes(query));
+  select.innerHTML='<option value="">'+(filtered.length?'Choose a location':'No matching locations')+'</option>'+filtered.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(location=>'<option value="'+h(location.id)+'">'+h(location.name)+(location.is_active?'':' (archived)')+'</option>').join('');
   select.value=id;
   renderLocationEditor();
+}
+function setEditorCoordinates(latitude,longitude,moveMap=true) {
+  $('edit-location-latitude').value=Number(latitude).toFixed(6);
+  $('edit-location-longitude').value=Number(longitude).toFixed(6);
+  editorMarker?.setLatLng([latitude,longitude]);
+  if(moveMap)editorMap?.panTo([latitude,longitude]);
+}
+function ensureEditorMap(location) {
+  const point=[location.latitude,location.longitude];
+  if(!editorMap){
+    editorMap=L.map('location-coordinate-map',{zoomControl:true}).setView(point,18);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(editorMap);
+    editorMarker=L.marker(point,{draggable:true}).addTo(editorMap);
+    editorMarker.on('dragend',()=>{const point=editorMarker.getLatLng();setEditorCoordinates(point.lat,point.lng,false);});
+    editorMap.on('click',event=>setEditorCoordinates(event.latlng.lat,event.latlng.lng));
+  }else{editorMap.setView(point,18);editorMarker.setLatLng(point);}
+  requestAnimationFrame(()=>editorMap.invalidateSize({pan:false}));
 }
 function renderLocationEditor() {
   const location=locations.find(item=>item.id===$('edit-location-select').value);
   $('location-edit-fields').hidden=!location;
+  $('location-edit-empty').hidden=Boolean(location);
   message('location-edit-message','');
   if(!location)return;
   $('edit-location-code').value=location.id;
@@ -61,6 +84,10 @@ function renderLocationEditor() {
   $('edit-location-longitude').value=location.longitude;
   $('edit-location-altitude').value=location.altitude;
   $('edit-location-active').checked=location.is_active;
+  $('edit-location-status').textContent=location.is_active?'Active':'Archived';
+  $('edit-location-reports').textContent=location.report_count+' report'+(location.report_count===1?'':'s');
+  $('edit-location-updated').textContent='Updated '+formatDate(location.updated_at);
+  ensureEditorMap(location);
 }
 async function loadLocationEditor(id='') {
   locations=await loadAdminLocations();locationEditorLoaded=true;populateLocationEditor(id);
@@ -112,6 +139,12 @@ function bind() {
   $('queue-next').onclick=event=>buttonAction(event.currentTarget,async()=>{page++;await reloadQueue();});
   $('reports-table-body').onclick=event=>{const button=event.target.closest('[data-review]');if(button)selectReport(button.dataset.review);};
   $('close-review').onclick=()=>{selectedId='';detailRequest++;$('review-panel').hidden=true;renderQueue();};
+  $('delete-report-button').onclick=()=>{
+    if(!selectedId)return;
+    const report=reports.find(item=>item.id===selectedId);
+    $('delete-report-description').textContent=report?'Report for '+report.location_name:selectedId;
+    $('delete-report-dialog').returnValue='';$('delete-report-dialog').showModal();
+  };
   $('report-status-form').onsubmit=event=>handleAction(event,async()=>{
     if(!selectedId) throw new Error('Select a report first.');
     await reviewReport(selectedId,$('selected-status').value,$('selected-admin-notes').value);
@@ -125,7 +158,12 @@ function bind() {
     await changePassword($('new-password').value); $('password-form').reset();message('password-message','Password updated.');
   },'password-message');
   $('kml-file').onchange=()=>{clearPreview();message('kml-message','');};
+  $('edit-location-search').oninput=()=>populateLocationEditor($('edit-location-select').value);
   $('edit-location-select').onchange=renderLocationEditor;
+  for(const id of ['edit-location-latitude','edit-location-longitude'])$(id).onchange=()=>{
+    const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value);
+    if(Number.isFinite(latitude)&&Number.isFinite(longitude)&&latitude>=-90&&latitude<=90&&longitude>=-180&&longitude<=180)setEditorCoordinates(latitude,longitude);
+  };
   $('reset-location-edit').onclick=renderLocationEditor;
   $('location-edit-form').onsubmit=event=>handleAction(event,async()=>{
     const id=$('edit-location-select').value;if(!id)throw new Error('Choose a location first.');
@@ -192,6 +230,14 @@ function bind() {
     if($('delete-account-dialog').returnValue!=='delete'||!deleteAccountId)return;
     try {await deleteAccount(deleteAccountId);deleteAccountId='';await renderAccounts();activityLoaded=false;message('accounts-message','Account deleted.');}
     catch(error){message('accounts-message',error.message||'Could not delete the account.',true);}
+  });
+  $('delete-report-dialog').addEventListener('close',async()=>{
+    if($('delete-report-dialog').returnValue!=='delete'||!selectedId)return;
+    const deletingId=selectedId;
+    try {
+      await deleteReport(deletingId);selectedId='';detailRequest++;$('review-panel').hidden=true;
+      await reloadQueue();activityLoaded=false;message('admin-warning','Report deleted.');$('admin-warning').hidden=false;$('admin-warning').className='form-message is-success';
+    } catch(error){message('status-message',error.message||'Could not delete the report.',true);}
   });
 }
 async function boot() {

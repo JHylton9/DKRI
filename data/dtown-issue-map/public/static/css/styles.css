@@ -190,6 +190,10 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .autosave-note { display: block; margin-top: 5px; }
 .location-editor { display: grid; grid-template-columns: minmax(180px,280px) minmax(0,620px); gap: 32px; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
 .location-editor>div p { margin-top: 8px; }
+.location-picker { display: flex; flex-direction: column; gap: 16px; }
+.location-picker select { min-height: 250px; background-image: none; padding-right: 12px; }
+.location-editor-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+#location-coordinate-map { width: 100%; height: 280px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
 .coordinate-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .admin-layout { display: grid; grid-template-columns: 180px minmax(0,1fr); min-height: calc(100dvh - 80px); }
 .admin-nav { background: var(--soft); border-right: 1px solid var(--border); padding: 24px 12px; display: flex; flex-direction: column; gap: 4px; }
@@ -267,6 +271,8 @@ dialog .actions { margin-top: 24px; justify-content: end; }
   .toolbar { grid-template-columns: minmax(0,1fr) 130px; gap: 12px; }
   .account-invite-form { grid-template-columns: 1fr; }
   .location-editor { grid-template-columns: 1fr; gap: 20px; padding: 16px; }
+  .location-picker select { min-height: 180px; }
+  #location-coordinate-map { height: 240px; }
   .coordinate-grid { grid-template-columns: 1fr; }
   .page-heading.section-heading { align-items: start; }
   .review-panel .detail-list { grid-template-columns: 80px minmax(0,1fr); }

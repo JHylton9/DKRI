@@ -22,7 +22,7 @@ Supabase Auth stores passwords and sessions; the protected `admin_members` table
 
 ## Location publishing
 
-Individual locations can be edited directly in **Locations**. Names, descriptions, coordinates, altitude and public availability can change without replacing the inventory. Location codes remain immutable so reports and QR links stay connected. Direct edits are recorded in **Activity**.
+Individual locations can be searched and edited directly in **Locations**. Names, descriptions, coordinates, altitude and public availability can change without replacing the inventory. A live map supports click-to-position and draggable-marker editing while the coordinate fields provide precise control. Location codes remain immutable so reports and QR links stay connected. Direct edits are recorded in **Activity**.
 
 1. Open **Locations**, choose a KML file and select **Validate and preview**.
 2. Review the count, additions, retained codes, archived locations and sample rows.

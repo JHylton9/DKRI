@@ -69,6 +69,8 @@ test('admin location editor preserves immutable location codes', () => {
   const adminSource=readFileSync('data/dtown-issue-map/public/static/js/admin.js','utf8');
   assert.match(adminHtml,/id="edit-location-code" disabled/);
   assert.match(adminSource,/await updateLocation\(\{id,name:/);
+  assert.match(adminHtml,/id="location-coordinate-map"/);
+  assert.match(adminSource,/draggable:true/);
 });
 
 test('public navigation routes explicitly to map and reporting', () => {
@@ -83,4 +85,13 @@ test('account access auto-saves and deletion requires confirmation', () => {
   assert.doesNotMatch(adminSource,/data-save-account/);
   assert.match(adminSource,/accounts-table-body'\)\.onchange/);
   assert.match(adminHtml,/id="delete-account-dialog"/);
+});
+
+test('all administrators can delete reports with confirmation', () => {
+  const adminHtml=readFileSync('data/dtown-issue-map/public/admin.html','utf8');
+  const adminSource=readFileSync('data/dtown-issue-map/public/static/js/admin.js','utf8');
+  const edgeSource=readFileSync('supabase/functions/admin-accounts/index.ts','utf8');
+  assert.match(adminHtml,/id="delete-report-dialog"/);
+  assert.match(adminSource,/await deleteReport\(deletingId\)/);
+  assert.ok(edgeSource.indexOf("body.action==='delete_report'") < edgeSource.indexOf("member.role!=='owner'"));
 });
