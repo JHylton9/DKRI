@@ -62,6 +62,18 @@ Deno.serve(async req=>{
       await service.from('admin_activity').insert({actor_id:user.id,action:role?'Account role updated':'Account access revoked',target_id:userId,detail:{role}});
       return reply({success:true});
     }
+    if(body.action==='delete_account'){
+      const userId=typeof body.user_id==='string'?body.user_id:'';
+      if(!/^[0-9a-f-]{36}$/i.test(userId))throw fail('Choose a valid account.');
+      if(userId===user.id)throw fail('You cannot delete your own account.');
+      const {data:target,error:targetError}=await service.auth.admin.getUserById(userId);
+      if(targetError||!target.user)throw fail('Account not found.',404);
+      const email=target.user.email||'';
+      const {error:deleteError}=await service.auth.admin.deleteUser(userId);
+      if(deleteError)throw deleteError;
+      await service.from('admin_activity').insert({actor_id:user.id,action:'Account deleted',target_id:userId,detail:{email}});
+      return reply({success:true});
+    }
     throw fail('Invalid account action.');
   }catch(error){
     const status=error.status||500;if(status>=500)console.error(error.message);

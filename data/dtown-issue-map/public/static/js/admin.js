@@ -1,8 +1,8 @@
-import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, signOut, changePassword } from './backend.js';
+import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
 const $ = id => document.getElementById(id);
-let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='';
+let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='';
 let total=0, queueRequest=0, detailRequest=0, searchTimer;
 let importsLoaded=false, activityLoaded=false, accountsLoaded=false, locationEditorLoaded=false, ready=false, restoreBusy=false, currentUser=null;
 function message(id,text,error=false) { $(id).textContent=text; $(id).className='form-message '+(error?'is-error':'is-success'); }
@@ -73,7 +73,7 @@ async function renderActivity(reset=false) {
 }
 async function renderAccounts() {
   const data=await loadAccounts();accountsLoaded=true;
-  $('accounts-table-body').innerHTML=data.accounts.map(account=>'<tr><td><strong>'+h(account.email||'No email')+'</strong>'+(account.id===data.current_user_id?'<div class="metadata">Current account</div>':'')+'</td><td>'+(account.last_sign_in_at?h(formatDate(account.last_sign_in_at)):'Never')+'</td><td><select data-account-role="'+h(account.id)+'" '+(account.id===data.current_user_id?'disabled':'')+'><option value="" '+(!account.role?'selected':'')+'>No access</option><option value="administrator" '+(account.role==='administrator'?'selected':'')+'>Administrator</option><option value="owner" '+(account.role==='owner'?'selected':'')+'>Owner</option></select></td><td><button data-save-account="'+h(account.id)+'" '+(account.id===data.current_user_id?'disabled':'')+'>Save</button></td></tr>').join('')||'<tr><td colspan="4" class="empty-state">No accounts found.</td></tr>';
+  $('accounts-table-body').innerHTML=data.accounts.map(account=>'<tr><td><strong>'+h(account.email||'No email')+'</strong>'+(account.id===data.current_user_id?'<div class="metadata">Current account</div>':'')+'</td><td>'+(account.last_sign_in_at?h(formatDate(account.last_sign_in_at)):'Never')+'</td><td><select data-account-role="'+h(account.id)+'" '+(account.id===data.current_user_id?'disabled':'')+'><option value="" '+(!account.role?'selected':'')+'>No access</option><option value="administrator" '+(account.role==='administrator'?'selected':'')+'>Administrator</option><option value="owner" '+(account.role==='owner'?'selected':'')+'>Owner</option></select><span class="metadata autosave-note">Saves automatically</span></td><td><button class="button--danger" data-delete-account="'+h(account.id)+'" data-account-email="'+h(account.email||'this account')+'" '+(account.id===data.current_user_id?'disabled':'')+'>Delete</button></td></tr>').join('')||'<tr><td colspan="4" class="empty-state">No accounts found.</td></tr>';
 }
 async function section() {
   const requested=location.hash.slice(1);
@@ -159,13 +159,18 @@ function bind() {
     $('register-account-form').reset();await renderAccounts();activityLoaded=false;
     message('accounts-message','Account registered and ready to sign in.');
   },'accounts-message');
+  $('accounts-table-body').onchange=async event=>{
+    const select=event.target.closest('[data-account-role]');if(!select)return;
+    select.disabled=true;
+    try {await setAccountRole(select.dataset.accountRole,select.value||null);activityLoaded=false;message('accounts-message','Account access updated automatically.');}
+    catch(error){message('accounts-message',error.message||'Could not update account access.',true);await renderAccounts();}
+    finally{if(select.isConnected)select.disabled=false;}
+  };
   $('accounts-table-body').onclick=event=>{
-    const button=event.target.closest('[data-save-account]');if(!button)return;
-    buttonAction(button,async()=>{
-      const select=document.querySelector('[data-account-role="'+CSS.escape(button.dataset.saveAccount)+'"]');
-      await setAccountRole(button.dataset.saveAccount,select.value||null);await renderAccounts();activityLoaded=false;
-      message('accounts-message','Account access updated.');
-    });
+    const button=event.target.closest('[data-delete-account]');if(!button)return;
+    deleteAccountId=button.dataset.deleteAccount;
+    $('delete-account-description').textContent=button.dataset.accountEmail;
+    $('delete-account-dialog').returnValue='';$('delete-account-dialog').showModal();
   };
   $('import-history').onclick=event=>{
     const button=event.target.closest('[data-restore]');if(!button||restoreBusy)return;
@@ -182,6 +187,11 @@ function bind() {
       message('kml-message','Version restored and published. Report history is preserved.');
       await reloadQueue();await renderImports(true);await loadLocationEditor();
     } catch(error) { warning(error); } finally { restoreBusy=false; }
+  });
+  $('delete-account-dialog').addEventListener('close',async()=>{
+    if($('delete-account-dialog').returnValue!=='delete'||!deleteAccountId)return;
+    try {await deleteAccount(deleteAccountId);deleteAccountId='';await renderAccounts();activityLoaded=false;message('accounts-message','Account deleted.');}
+    catch(error){message('accounts-message',error.message||'Could not delete the account.',true);}
   });
 }
 async function boot() {

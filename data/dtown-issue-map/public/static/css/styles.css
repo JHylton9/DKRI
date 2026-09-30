@@ -31,6 +31,8 @@ button:hover,.button:hover { background: var(--soft); color: var(--ink); }
 button:disabled { cursor: default; opacity: .5; }
 .button--primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 .button--primary:hover { background: oklch(34% 0.012 260); color: var(--surface); }
+.button--danger { color: var(--error); border-color: color-mix(in oklch,var(--error),white 65%); }
+.button--danger:hover { color: var(--surface); background: var(--error); border-color: var(--error); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 input,select,textarea { width: 100%; min-height: 44px; padding: 10px 12px; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; line-height: 1.5; }
 select { padding-right: 28px; }
@@ -185,6 +187,7 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .account-invite-form { display: grid; grid-template-columns: minmax(220px,420px) 180px auto; align-items: end; gap: 12px; margin-bottom: 12px; }
 .account-role-help { margin-bottom: 20px; }
 #accounts-message { margin-bottom: 16px; }
+.autosave-note { display: block; margin-top: 5px; }
 .location-editor { display: grid; grid-template-columns: minmax(180px,280px) minmax(0,620px); gap: 32px; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
 .location-editor>div p { margin-top: 8px; }
 .coordinate-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }

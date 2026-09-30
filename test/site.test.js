@@ -76,3 +76,11 @@ test('public navigation routes explicitly to map and reporting', () => {
   assert.match(mapHtml,/class="brand" href="\/map"/);
   assert.match(mapHtml,/class="button button--primary" href="\/report">Report an issue/);
 });
+
+test('account access auto-saves and deletion requires confirmation', () => {
+  const adminHtml=readFileSync('data/dtown-issue-map/public/admin.html','utf8');
+  const adminSource=readFileSync('data/dtown-issue-map/public/static/js/admin.js','utf8');
+  assert.doesNotMatch(adminSource,/data-save-account/);
+  assert.match(adminSource,/accounts-table-body'\)\.onchange/);
+  assert.match(adminHtml,/id="delete-account-dialog"/);
+});

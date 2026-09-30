@@ -45,6 +45,7 @@ async function adminAccountAction(body) {
 export const loadAccounts = () => adminAccountAction({ action: 'list' });
 export const registerAccount = (email, password, role) => adminAccountAction({ action: 'register', email, password, role });
 export const setAccountRole = (userId, role) => adminAccountAction({ action: 'set_role', user_id: userId, role });
+export const deleteAccount = userId => adminAccountAction({ action: 'delete_account', user_id: userId });
 export async function submitReport(form) {
   const { data, error } = await supabase.functions.invoke('submit-report', { body: form });
   if (error) {
