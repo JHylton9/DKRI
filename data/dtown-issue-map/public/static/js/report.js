@@ -21,6 +21,24 @@ function setMessage(message, kind = "") {
   node.className = `form-message${kind ? ` is-${kind}` : ""}`;
 }
 
+function showFieldError(message, target) {
+  document.querySelectorAll('.field-error').forEach(node => node.remove());
+  document.querySelectorAll('[aria-invalid="true"]').forEach(node => node.removeAttribute('aria-invalid'));
+  setMessage(message, 'error');
+  const element = typeof target === 'string' ? document.getElementById(target) : target;
+  const region = element?.closest('.form-section') || element;
+  if (element && region) {
+    element.setAttribute('aria-invalid', 'true');
+    const inline = document.createElement('p');
+    inline.className = 'form-message is-error field-error';
+    inline.textContent = message;
+    const label = element.closest('label:not(.checkbox-card)');
+    (label || region).append(inline);
+  }
+  region?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window.setTimeout(() => element?.focus({ preventScroll: true }), 250);
+}
+
 function getPhotoInput() {
   return document.getElementById("photo-input");
 }
@@ -129,9 +147,24 @@ function renderLocationSummary() {
   pills.innerHTML = location
     ? `
       ${location.report_count ? statusPill(location.status) : '<span class="pill">No reports</span>'}
-      <span class="pill">Code ${escapeHtml(location.code_label || location.id)}</span>
     `
     : "";
+}
+
+function syncOtherIssue() {
+  const selected = document.querySelector('input[name="issue_types"][value="Other"]')?.checked;
+  const field = document.getElementById('other-issue-field');
+  const input = document.getElementById('other-issue-input');
+  field.hidden = !selected;
+  input.required = Boolean(selected);
+  if (!selected) input.value = '';
+}
+
+function rememberReport(token) {
+  const reports = JSON.parse(localStorage.getItem('dkri_report_links') || '[]').filter(item => item.token !== token);
+  reports.unshift({ token, saved_at: new Date().toISOString() });
+  localStorage.setItem('dkri_report_links', JSON.stringify(reports.slice(0, 5)));
+  sessionStorage.setItem('dkri_latest_report_token', token);
 }
 
 function syncContactField() {
@@ -190,24 +223,37 @@ async function submitReport(event) {
   const checkedIssueTypes = Array.from(document.querySelectorAll('input[name="issue_types"]:checked')).map((input) => input.value);
   const photoFiles = Array.from(getPhotoInput().files || []);
 
-  if (!checkedIssueTypes.length) {
-    setMessage("Choose at least one issue type.", "error");
+  if (!formData.get("location_id")) {
+    showFieldError("Choose a location first.", 'location-select');
     return;
   }
-  if (!formData.get("location_id")) {
-    setMessage("Choose a location first.", "error");
+  if (!checkedIssueTypes.length) {
+    showFieldError("Choose at least one issue type.", document.querySelector('input[name="issue_types"]'));
+    return;
+  }
+  const description = String(formData.get('description') || '').trim();
+  if (!description && !photoFiles.length) {
+    showFieldError('Add a short description or at least one photo.', 'description-input');
+    return;
+  }
+  if (checkedIssueTypes.includes('Other') && !String(formData.get('issue_other') || '').trim()) {
+    showFieldError('Briefly name the other issue.', 'other-issue-input');
     return;
   }
   if (photoFiles.length > 5) {
-    setMessage("Choose up to 5 photos per report.", "error");
+    showFieldError("Choose up to 5 photos per report.", 'photo-library-button');
     return;
   }
   if (photoFiles.some(file => file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))) {
-    setMessage('Use JPG, PNG, WEBP or GIF photos, each 10 MB or smaller.', 'error');
+    showFieldError('Use JPG, PNG, WEBP or GIF photos, each 10 MB or smaller.', 'photo-library-button');
+    return;
+  }
+  if (formData.get('contact_method') === 'email' && !document.getElementById('contact-value').validity.valid) {
+    showFieldError('Enter a valid email address.', 'contact-value');
     return;
   }
   if (formData.get('contact_method') === 'phone' && String(formData.get('contact_value')).replace(/\D/g, '').length < 7) {
-    setMessage('Enter a phone number with at least 7 digits.', 'error');
+    showFieldError('Enter a phone number with at least 7 digits.', 'contact-value');
     return;
   }
 
@@ -216,21 +262,8 @@ async function submitReport(event) {
 
   try {
     const payload = await saveReport(formData);
-    const reportedLocation = getSelectedLocation();
-    if (reportedLocation) {
-      reportedLocation.report_count++;
-      if (reportedLocation.status !== 'down') reportedLocation.status = 'pending';
-    }
-
-    const keepLocationId = document.getElementById("location-select").value;
-    form.reset();
-    document.getElementById("location-select").value = keepLocationId;
-    document.getElementById("contact-method").value = "none";
-    selectedLocationId = keepLocationId;
-    renderLocationSummary();
-    syncContactField();
-    renderPhotoPreview();
-    setMessage(`Report submitted for ${payload.location_name}.`, "success");
+    rememberReport(payload.access_token);
+    window.location.assign('/map?submitted=1');
   } catch (error) {
     setMessage(
       error instanceof TypeError ? getFetchErrorMessage("report submissions") : (error.message || "Could not submit the report."),
@@ -248,6 +281,7 @@ function bindEvents() {
     document.getElementById("location-select").focus();
   });
   document.getElementById("contact-method").addEventListener("change", syncContactField);
+  document.getElementById('issue-type-list').addEventListener('change', syncOtherIssue);
   document.getElementById("photo-camera-button").addEventListener("click", () => openPhotoPicker(true));
   document.getElementById("photo-library-button").addEventListener("click", () => openPhotoPicker(false));
   getPhotoInput().addEventListener("change", renderPhotoPreview);
@@ -261,6 +295,7 @@ async function boot() {
     const payload = await fetchFormData();
     locations = payload.locations || [];
     renderIssueTypes(payload.issue_types || []);
+    syncOtherIssue();
     renderLocationOptions(locations);
     applyLocationPrefill();
     renderLocationSummary();

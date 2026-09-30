@@ -17,6 +17,7 @@
   "rewrites": [
     { "source": "/report", "destination": "/report.html" },
     { "source": "/map", "destination": "/map.html" },
+    { "source": "/track", "destination": "/track.html" },
     { "source": "/portal", "destination": "/login.html" },
     { "source": "/portal/dashboard", "destination": "/admin.html" }
   ],

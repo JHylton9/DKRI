@@ -11,11 +11,11 @@ mkdirSync('dist/static/vendor/leaflet', { recursive: true });
 cpSync('node_modules/leaflet/dist/leaflet.css', 'dist/static/vendor/leaflet/leaflet.css');
 cpSync('node_modules/leaflet/dist/images', 'dist/static/vendor/leaflet/images', { recursive: true });
 cpSync('node_modules/leaflet/LICENSE', 'dist/static/vendor/leaflet/LICENSE');
-for (const page of ['map', 'report', 'login', 'admin']) cpSync(`${source}/${page}.html`, `dist/${page}.html`);
+for (const page of ['map', 'report', 'track', 'login', 'admin']) cpSync(`${source}/${page}.html`, `dist/${page}.html`);
 cpSync(`${source}/map.html`, 'dist/index.html');
-for (const [route,page] of [['map','map'],['report','report'],['portal','login'],['portal/dashboard','admin']]) {
+for (const [route,page] of [['map','map'],['report','report'],['track','track'],['portal','login'],['portal/dashboard','admin']]) {
   mkdirSync(`dist/${route}`, { recursive: true });
   cpSync(`${source}/${page}.html`, `dist/${route}/index.html`);
 }
-await build({ entryPoints: ['report','map','login','admin'].map(name => `${source}/static/js/${name}.js`), bundle: true, splitting: true, format: 'esm', platform: 'browser', minify: true, outdir: 'dist/static/js' });
+await build({ entryPoints: ['report','map','track','login','admin'].map(name => `${source}/static/js/${name}.js`), bundle: true, splitting: true, format: 'esm', platform: 'browser', minify: true, outdir: 'dist/static/js' });
 console.log('Static site ready in dist. Supabase provides data, auth and photo storage.');

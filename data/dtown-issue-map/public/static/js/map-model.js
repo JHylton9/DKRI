@@ -8,7 +8,7 @@
       && (filters.category === 'all' || location.issue_types.includes(filters.category))
       && (!filters.from || (date && date >= filters.from))
       && (!filters.to || (date && date <= filters.to))
-      && (!query || [location.id, location.name, ...location.issue_types].join(' ').toLowerCase().includes(query));
+      && (!query || [location.name, ...location.issue_types].join(' ').toLowerCase().includes(query));
   });
 }
 export function importChanges(points, locations) {

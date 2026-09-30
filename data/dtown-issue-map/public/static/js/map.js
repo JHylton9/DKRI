@@ -66,8 +66,11 @@ function update() {
   }
   renderList(); renderMarkers();
 }
+function issueLabel(report) {
+  return report.issue_types.map(type => type === 'Other' && report.issue_other ? 'Other: ' + report.issue_other : type).join(', ');
+}
 function historyMarkup(reports) {
-  return reports.map(report => '<article class="history-row"><div class="history-meta"><span class="status-badge status-badge--' + h(report.status) + '">' + h(report.status) + '</span><time class="metadata">' + h(formatDate(report.submitted_at)) + '</time></div><p>' + h(report.issue_types.join(', ')) + '</p>' + (report.description ? '<p>' + h(report.description) + '</p>' : '') + '<div class="photo-grid">' + report.photos.map(photo => '<a href="' + h(photo.url) + '" target="_blank" rel="noreferrer"><img loading="lazy" src="' + h(photo.url) + '" alt="' + h(photo.filename) + '"></a>').join('') + '</div></article>').join('');
+  return reports.map(report => '<article class="history-row"><div class="history-meta"><span class="status-badge status-badge--' + h(report.status) + '">' + h(report.status) + '</span><time class="metadata">' + h(formatDate(report.submitted_at)) + '</time></div><p>' + h(issueLabel(report)) + '</p>' + (report.description ? '<p>' + h(report.description) + '</p>' : '') + '<div class="photo-grid">' + report.photos.map(photo => '<a href="' + h(photo.url) + '" target="_blank" rel="noreferrer"><img loading="lazy" src="' + h(photo.url) + '" alt="' + h(photo.filename) + '"></a>').join('') + '</div></article>').join('');
 }
 async function moreHistory(version, initial = false) {
   const id = selectedId, button = $('history-more');
@@ -98,7 +101,7 @@ async function selectLocation(id, zoom = true) {
   expandSheet(true);
   $('feature-details').hidden = false;
   $('feature-details').innerHTML = '<div class="section-heading"><h2>' + h(item.name) + '</h2><button id="close-detail" class="icon-button" aria-label="Close location details">×</button></div>'
-    + '<dl class="detail-list"><dt>Code</dt><dd>' + h(item.id) + '</dd><dt>Status</dt><dd>' + (item.report_count ? '<span class="status-badge status-badge--' + h(item.status) + '">' + h(item.status) + '</span>' : 'No reports') + '</dd><dt>Reports</dt><dd>' + item.report_count + ' total · ' + item.open_report_count + ' open</dd><dt>Latest</dt><dd>' + h(formatDate(item.latest_report_at)) + '</dd><dt>Position</dt><dd>' + item.latitude.toFixed(6) + ', ' + item.longitude.toFixed(6) + '</dd></dl>'
+    + '<dl class="detail-list"><dt>Status</dt><dd>' + (item.report_count ? '<span class="status-badge status-badge--' + h(item.status) + '">' + h(item.status) + '</span>' : 'No reports') + '</dd><dt>Reports</dt><dd>' + item.report_count + ' total · ' + item.open_report_count + ' open</dd><dt>Latest</dt><dd>' + h(formatDate(item.latest_report_at)) + '</dd><dt>Position</dt><dd>' + item.latitude.toFixed(6) + ', ' + item.longitude.toFixed(6) + '</dd></dl>'
     + (item.description ? '<p class="muted">' + h(item.description) + '</p>' : '')
     + '<div class="detail-actions"><button id="zoom-feature">Zoom to location</button><a class="button button--primary" href="/report?location_id=' + encodeURIComponent(id) + '">Report an issue here</a></div>'
     + '<div class="report-history"><h3>Report history</h3><div id="history-items"></div><p id="history-message" class="form-message" role="status">Loading reports…</p><button id="history-more" hidden>Load older reports</button></div>';
@@ -111,7 +114,9 @@ async function selectLocation(id, zoom = true) {
   await moreHistory(version,true);
 }
 function initMap() {
-  map = L.map('map',{zoomControl:false,preferCanvas:true,zoomAnimation:!reduceMotion,fadeAnimation:!reduceMotion}).setView([17.9714,-76.792],15);
+  // At Kingston's latitude, level 14 makes Leaflet's metric scale top out at 500 m.
+  // Users can freely zoom from that neighbourhood view down to street detail.
+  map = L.map('map',{zoomControl:false,minZoom:14,maxZoom:19,preferCanvas:true,zoomAnimation:!reduceMotion,fadeAnimation:!reduceMotion}).setView([17.9714,-76.792],15);
   tiles.street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
   tiles.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri, Maxar, Earthstar Geographics'});
   Object.values(tiles).forEach(layer => layer.on('tileerror',()=>{ if(layer===activeTiles) $('tile-error').hidden=false; }));
@@ -130,6 +135,20 @@ function initMap() {
   new ResizeObserver(()=>map.invalidateSize({pan:true,animate:false})).observe(document.querySelector('.map-surface'));
 }
 async function boot() {
+  const latestToken = sessionStorage.getItem('dkri_latest_report_token');
+  if (new URLSearchParams(location.search).get('submitted') === '1' && latestToken) {
+    const reportUrl = '/track#' + encodeURIComponent(latestToken);
+    $('submission-notice').hidden = false;
+    $('view-submitted-report').href = reportUrl;
+    $('dialog-view-report').href = reportUrl;
+    $('submission-dialog').showModal();
+    $('dialog-view-map').onclick = () => {
+      $('submission-dialog').close();
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete('submitted');
+      history.replaceState(null, '', cleanUrl);
+    };
+  }
   $('sheet-toggle').onclick=()=>expandSheet($('sheet-toggle').getAttribute('aria-expanded')!=='true');
   document.querySelector('.skip-link').onclick=()=>{ expandSheet(true); $('map-search').value=''; update(); $('results').focus(); };
   document.querySelector('.sidebar-body').addEventListener('click',event=>{

@@ -1,5 +1,5 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
-export const ISSUE_TYPES = ['Garbage buildup', 'Illegal dumping', 'Damaged / missing bin', 'Blocked drain', 'Lighting issue', 'Signage issue', 'Vagrancy / loitering'];
+export const ISSUE_TYPES = ['Garbage buildup', 'Illegal dumping', 'Damaged / missing bin', 'Blocked drain', 'Lighting issue', 'Signage issue', 'Vagrancy / loitering', 'Other'];
 export const STATUSES = ['pending', 'down', 'fixed'];
 export const now = () => new Date().toISOString();
 export function invalid(message, status = 400) { return Object.assign(new Error(message), { status }); }
@@ -30,4 +30,3 @@ export function parseKml(text) {
   if (!points.length || new Set(points.map(p => p.id)).size !== points.length) throw invalid('KML must contain valid points with unique IDs.');
   return points;
 }
-

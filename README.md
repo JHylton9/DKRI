@@ -1,6 +1,6 @@
 # DKRI map
 
-A static HTML, JavaScript and CSS application for Downtown Kingston, with Supabase for Postgres, Auth, Storage and validated public submissions. The interface follows the supplied FireMap specification: map-first, compact controls, system typography, warm light surfaces and a restrained red accent.
+A static HTML, JavaScript and CSS application for the Downtown Kingston Redevelopment Initiative, with Supabase for Postgres, Auth, Storage and validated public submissions. The public map is the entry page, reporting remains open to everyone, and report links and administration are protected separately.
 
 ## Routes
 
@@ -9,7 +9,7 @@ A static HTML, JavaScript and CSS application for Downtown Kingston, with Supaba
 | `/` or `/map` | Public map, search, layers, status/category/date filters, location details and report history |
 | `/report` | Public reporting form; accepts `?location_id=CODE` |
 | `/portal` | Staff sign-in |
-| `/portal/dashboard` | Reports, Locations, Activity and Password |
+| `/portal/dashboard` | Reports, Locations, Activity, Accounts and Password |
 | `/admin`, `/login` | Compatibility redirects |
 
 Existing QR links to `/?location_id=CODE` still open a preselected reporting form. On mobile, use the arrow in the bottom map bar to open the controls. Reporting and the map remain public.
@@ -18,9 +18,11 @@ Existing QR links to `/?location_id=CODE` still open a preselected reporting for
 
 Open `/portal` and sign in as **jaydonhylton17@gmail.com** with your existing password. The initial password was saved in `ADMIN-CREDENTIALS.local.txt` in the original DTownAppv2 setup folder; it is excluded from Git and deployment. Change your password in the **Password** section after signing in.
 
-Supabase Auth stores passwords and sessions; the protected `admin_members` table grants administrator access. No credentials are embedded in the site. Contact information and internal notes are only readable by administrators.
+Supabase Auth stores passwords and sessions; the protected `admin_members` table grants operational access. Owners can invite accounts and assign Owner or Administrator access. Administrators can operate reports and locations but cannot manage accounts. No credentials are embedded in the site. Contact information and internal notes are only readable by administrators.
 
 ## Location publishing
+
+Individual locations can be edited directly in **Locations**. Names, descriptions, coordinates, altitude and public availability can change without replacing the inventory. Location codes remain immutable so reports and QR links stay connected. Direct edits are recorded in **Activity**.
 
 1. Open **Locations**, choose a KML file and select **Validate and preview**.
 2. Review the count, additions, retained codes, archived locations and sample rows.
@@ -47,7 +49,7 @@ Project: [DKRI](https://supabase.com/dashboard/project/wkwnuzmsohnanxntpvze).
 
 All exposed application tables have RLS. Views use security-invoker semantics. Public browsers cannot write report tables, assign roles, read contacts, publish inventories or write arbitrary Storage objects.
 
-The deployed `submit-report` Edge Function validates public submissions and up to five JPG/PNG/WEBP/GIF images, 10 MB each. It saves report metadata atomically and removes uploaded photos if the save fails. Descriptions and photo evidence are public; the form explains this before submission.
+The deployed `submit-report` Edge Function validates public submissions and up to five JPG/PNG/WEBP/GIF images, 10 MB each. A report must include a description, a photo, or both. It saves report metadata atomically, removes uploaded photos if the save fails, and returns a private tracking token. The `report-access` Edge Function uses that token for status viewing and public followups without exposing contact details.
 
 The map downloads compact summaries and fetches history only when a location opens. Histories and admin reports are paged in groups of 20; activity loads 50 rows at a time. Admin queue search/filter/pagination runs in Postgres. Import history fetches metadata, not complete KML/snapshots.
 

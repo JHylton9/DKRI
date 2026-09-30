@@ -1,19 +1,19 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#faf9f7"><meta name="description" content="Explore Downtown Kingston's mapped locations, view issue reports, and report a local problem.">
-<title>Downtown Kingston · Issue map</title><link rel="icon" href="/static/images/dkri-mini-logo-symbol.png">
+<title>Issue map · Downtown Kingston Redevelopment Initiative</title><link rel="icon" href="/static/images/our-city-kingston.png">
 <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="/static/css/styles.css"></head>
 <body class="map-page">
 <a class="skip-link" href="#results">Skip to locations</a>
 <main class="map-workspace">
 <aside class="map-sidebar" aria-label="Map controls">
-<header class="map-brand"><a class="brand" href="/" aria-label="Downtown Kingston map"><img src="/static/images/dkri-mini-logo-symbol.png" alt=""><span>DKRI<span class="brand-subtitle">Downtown Kingston</span></span></a><button id="sheet-toggle" class="icon-button sheet-toggle" aria-expanded="false" aria-controls="sidebar-body" aria-label="Show map controls"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button></header>
+<header class="map-brand"><div class="brand-group"><a class="brand" href="/" aria-label="Downtown Kingston Redevelopment Initiative"><img class="brand-primary" src="/static/images/our-city-kingston.png" alt="Our City Kingston"><span>DKRI<span class="brand-subtitle">Downtown Kingston Redevelopment Initiative</span></span></a><a class="partner-brand" href="https://www.theleapco.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit The LEAP Company website">In partnership with <img src="/static/images/dkri-colour-logo.png" alt="LEAPS"></a></div><button id="sheet-toggle" class="icon-button sheet-toggle" aria-expanded="false" aria-controls="sidebar-body" aria-label="Show map controls"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button></header>
 <div id="sidebar-body" class="sidebar-body">
-<section class="sidebar-section search-section"><label for="map-search">Find a location</label><div class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="map-search" type="search" placeholder="Name, code or issue" autocomplete="off"></div><div id="search-results" hidden></div></section>
-<section class="sidebar-section"><h2>Layers</h2><label class="check-row"><input id="layer-reports" type="checkbox" checked><span>Locations with reports</span><span class="legend-dot reported" aria-hidden="true"></span></label><label class="check-row"><input id="layer-empty" type="checkbox" checked><span>Unreported locations</span><span class="legend-dot unreported" aria-hidden="true"></span></label></section>
+<section class="sidebar-section search-section"><label for="map-search">Find a location</label><div class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="map-search" type="search" placeholder="Name or issue" autocomplete="off"></div><div id="search-results" hidden></div></section>
+<section class="sidebar-section"><h2>Layers</h2><label class="check-row"><input id="layer-reports" type="checkbox" checked><span>Locations with reports</span></label><label class="check-row"><input id="layer-empty" type="checkbox" checked><span>Unreported locations</span></label></section>
 <section class="sidebar-section">
 <div class="section-heading"><h2>Filter reports</h2><button class="text-button" id="reset-filters" hidden>Reset</button></div>
 <div class="filter-stack"><label>Status<select id="map-status"><option value="all">All statuses</option><option value="pending">Pending</option><option value="down">Down</option><option value="fixed">Fixed</option></select></label><label>Issue type<select id="map-category"><option value="all">All issue types</option></select></label><fieldset><legend>Latest report date</legend><div class="date-grid"><label>From<input id="map-from" type="date"></label><label>To<input id="map-to" type="date"></label></div></fieldset></div>
@@ -22,12 +22,13 @@
 <section id="feature-details" class="sidebar-section" hidden aria-label="Selected location"></section>
 <section id="results" class="sidebar-section results-section" tabindex="-1"><div class="section-heading"><h2>Locations</h2><span id="result-count" class="metadata" role="status"></span></div><div id="location-list"><p class="muted">Loading locations…</p></div><div class="pagination" id="map-pagination" hidden><button id="previous-page" aria-label="Previous locations">Previous</button><span id="page-label" class="metadata"></span><button id="next-page" aria-label="Next locations">Next</button></div></section>
 </div>
-<footer class="sidebar-footer"><span id="report-count" class="metadata"></span><a class="button button--primary" href="/report">Report an issue</a></footer>
+<footer class="sidebar-footer"><div id="submission-notice" class="submission-notice" hidden><strong>Report submitted</strong><a id="view-submitted-report" href="/track">View your report</a></div><span id="report-count" class="metadata"></span><a class="button button--primary" href="/">Report an issue</a></footer>
 </aside>
 <section class="map-surface" aria-label="Downtown Kingston map"><div id="map" tabindex="0" aria-label="Interactive issue map. Location details are also available in the locations list."></div>
 <div class="basemap-switch" role="group" aria-label="Base map"><button data-basemap="street" aria-pressed="true">Street</button><button data-basemap="satellite" aria-pressed="false">Satellite</button></div>
 <div class="map-actions" role="group" aria-label="Map navigation"><button id="zoom-in" class="icon-button" aria-label="Zoom in">+</button><button id="zoom-out" class="icon-button" aria-label="Zoom out">−</button><button id="show-all" class="icon-button" aria-label="Show all matching locations"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 <div id="map-loading" class="map-notice" role="status">Loading map…</div><div id="tile-error" class="map-notice" role="status" hidden>Map tiles could not load. <button class="text-button" id="retry-tiles">Retry</button></div>
 </section></main>
+<dialog id="submission-dialog" class="submission-dialog"><h2>Report submitted</h2><p>Your report is ready to view. You can also continue to the public map and return to the report from the confirmation notice.</p><div class="actions"><a id="dialog-view-report" class="button button--primary" href="/track">View report</a><button id="dialog-view-map" type="button">View map</button></div></dialog>
 <script type="module" src="/static/js/map.js"></script>
 </body></html>

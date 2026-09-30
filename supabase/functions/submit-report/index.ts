@@ -4,7 +4,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}').default;
 const db = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
 const publishable = 'sb_publishable_yIp0_PrdNKyFzlrCe4-fPg_VUosGs29';
-const types = ['Garbage buildup','Illegal dumping','Damaged / missing bin','Blocked drain','Lighting issue','Signage issue','Vagrancy / loitering'];
+const types = ['Garbage buildup','Illegal dumping','Damaged / missing bin','Blocked drain','Lighting issue','Signage issue','Vagrancy / loitering','Other'];
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
 function text(form: FormData, name: string, limit = 10000) {
@@ -20,6 +20,10 @@ function mime(bytes: Uint8Array) {
   if (ascii.startsWith('RIFF') && ascii.slice(8,12)==='WEBP') return 'image/webp';
   throw fail('Photos must be JPG, PNG, WEBP, or GIF images.');
 }
+function hex(bytes: Uint8Array) { return [...bytes].map(value=>value.toString(16).padStart(2,'0')).join(''); }
+async function hash(value: string) {
+  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))));
+}
 Deno.serve(async req => {
   const reply = (body: unknown, status=200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   if (req.method==='OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -34,10 +38,13 @@ Deno.serve(async req => {
     const bounded=req.body?.pipeThrough(new TransformStream({transform(chunk,controller){size+=chunk.byteLength;if(size>limit)throw fail('Report is too large.',413);controller.enqueue(chunk);}}));
     const form=await new Response(bounded,{headers:{'Content-Type':req.headers.get('content-type')||''}}).formData();
     const location=text(form,'location_id',500), description=text(form,'description'), method=text(form,'contact_method',20);
+    const other=text(form,'issue_other',200);
     const contact=method==='none'?'':text(form,'contact_value',300);
     const issues=[...new Set(form.getAll('issue_types'))];
     if (!issues.length || issues.some(type=>typeof type!=='string'||!types.includes(type))) throw fail('Choose at least one valid issue type.');
     if (!['none','email','phone'].includes(method)) throw fail('Choose a valid contact method.');
+    if (issues.includes('Other')&&!other) throw fail('Describe the other issue.');
+    if (!issues.includes('Other')&&other) throw fail('Select Other before adding another issue.');
     if (method==='email'&&!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(contact)) throw fail('Enter a valid email address.');
     if (method==='phone'&&contact.replace(/\D/g,'').length<7) throw fail('Enter a valid phone number.');
     const {data:active,error:locationError}=await db.from('locations').select('id').eq('id',location).eq('is_active',true).maybeSingle();
@@ -45,6 +52,7 @@ Deno.serve(async req => {
     if(!active) throw fail('Choose an active location.');
     const photos=form.getAll('photos').filter((f): f is File=>f instanceof File && f.size>0);
     if(photos.length>5)throw fail('Choose up to five photos.');
+    if(!description&&photos.length===0)throw fail('Add a description, a photo, or both.');
     const extensions: Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
     // Validate every photo before uploading any of them.
     const validated=[];
@@ -52,16 +60,19 @@ Deno.serve(async req => {
       if(file.size>10*1024*1024)throw fail('Each photo must be 10 MB or smaller.');
       validated.push({file,type:mime(new Uint8Array(await file.slice(0,12).arrayBuffer()))});
     }
-    const id=crypto.randomUUID(), records=[];
+    const id=crypto.randomUUID(), token=hex(crypto.getRandomValues(new Uint8Array(32))), records=[];
     for(const {file,type} of validated){
       const key=`${id}/${crypto.randomUUID()}.${extensions[type]}`;
       const {error}=await db.storage.from('report-photos').upload(key,file,{contentType:type,upsert:false});
       if(error)throw error;
       uploaded.push(key); records.push({storage_key:key,original_name:file.name.slice(0,255),content_type:type});
     }
-    const {data,error}=await db.rpc('submit_report',{p_id:id,p_location:location,p_description:description,p_types:issues,p_method:method,p_contact:contact,p_photos:records});
+    const {data,error}=await db.rpc('submit_report',{
+      p_id:id,p_location:location,p_description:description,p_types:issues,p_other:other,
+      p_method:method,p_contact:contact,p_photos:records,p_access_hash:await hash(token),
+    });
     if(error)throw error;
-    return reply(data,201);
+    return reply({...data,access_token:token},201);
   }catch(error){
     if(uploaded.length){const {error:cleanup}=await db.storage.from('report-photos').remove(uploaded);if(cleanup)console.error('Photo cleanup failed',cleanup.message);}
     const status=error.status||500;

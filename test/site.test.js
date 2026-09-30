@@ -21,11 +21,13 @@ test('deployment contains static entry pages and no application API function', (
   for (const route of config.rewrites) assert.ok(existsSync(`dist${route.destination}`), `Missing route target: ${route.destination}`);
   for (const route of config.redirects) assert.ok(config.rewrites.some(rewrite => rewrite.source === route.destination), `Unresolved redirect: ${route.destination}`);
   for (const path of ['.env.local', 'ADMIN-CREDENTIALS.local.txt', 'api/index.js', 'supabase']) assert.equal(existsSync(`dist/${path}`), false, `Private or server file in deployment: ${path}`);
-  for (const page of ['index','map','report','login','admin']) {
+  for (const page of ['index','map','report','track','login','admin']) {
     const html = readFileSync(`dist/${page}.html`, 'utf8');
     for (const [, asset] of html.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^" ]*)?"/g)) assert.ok(existsSync(`dist${asset}`), asset);
+    assert.match(html, /href="https:\/\/www\.theleapco\.com\/"[^>]+rel="noopener noreferrer"/);
   }
-  for (const page of ['report','map','login','admin']) {
+  assert.match(readFileSync('dist/index.html','utf8'), /class="map-workspace"/);
+  for (const page of ['report','map','track','login','admin']) {
     const source = readFileSync(`data/dtown-issue-map/public/static/js/${page}.js`, 'utf8');
     assert.equal(source.includes('API_BASE'), false, `${page} must not call the removed application server`);
   }
@@ -45,4 +47,26 @@ test('map filters combine layers, search, categories and inclusive latest-report
   assert.deepEqual(importChanges([{id:'A'},{id:'C'}], locations), { added: 1, retained: 1, archived: 1 });
   const eveningReport = [{ ...locations[0], latest_report_at: '2026-09-30T02:00:00Z' }];
   assert.equal(filterLocations(eveningReport, { ...defaults, from: '2026-09-29', to: '2026-09-29' }).length, 1, 'Date filters use the same Jamaica calendar date as report labels');
+});
+
+test('public map allows a 500 metre overview and street-level zoom', () => {
+  const mapSource = readFileSync('data/dtown-issue-map/public/static/js/map.js', 'utf8');
+  assert.match(mapSource, /minZoom:14,maxZoom:19/);
+  assert.match(mapSource, /maxZoom: 17/);
+});
+
+test('report validation stays in-page and submission prioritizes report tracking', () => {
+  const reportHtml = readFileSync('data/dtown-issue-map/public/report.html', 'utf8');
+  const mapHtml = readFileSync('data/dtown-issue-map/public/map.html', 'utf8');
+  const reportSource = readFileSync('data/dtown-issue-map/public/static/js/report.js', 'utf8');
+  assert.match(reportHtml, /id="report-form"[^>]+novalidate/);
+  assert.match(reportSource, /scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  assert.ok(mapHtml.indexOf('>View report<') < mapHtml.indexOf('>View map<'));
+});
+
+test('admin location editor preserves immutable location codes', () => {
+  const adminHtml=readFileSync('data/dtown-issue-map/public/admin.html','utf8');
+  const adminSource=readFileSync('data/dtown-issue-map/public/static/js/admin.js','utf8');
+  assert.match(adminHtml,/id="edit-location-code" disabled/);
+  assert.match(adminSource,/await updateLocation\(\{id,name:/);
 });
