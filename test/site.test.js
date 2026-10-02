@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { parseKml } from '../data/dtown-issue-map/public/static/js/model.js';
-import { filterLocations, importChanges } from '../data/dtown-issue-map/public/static/js/map-model.js';
+import { filterLocations, importChanges, nearestActiveLocation, distanceMeters } from '../data/dtown-issue-map/public/static/js/map-model.js';
 
 test('fixed-location KML parsing rejects unsafe or invalid location inventories', () => {
   const points = parseKml(readFileSync('data/dtown-issue-map/data/issues.kml', 'utf8'));
@@ -60,7 +60,10 @@ test('report validation stays in-page and submission prioritizes report tracking
   const mapHtml = readFileSync('data/dtown-issue-map/public/map.html', 'utf8');
   const reportSource = readFileSync('data/dtown-issue-map/public/static/js/report.js', 'utf8');
   assert.match(reportHtml, /id="report-form"[^>]+novalidate/);
+  assert.match(reportHtml, /id="location-options"/);
+  assert.doesNotMatch(reportHtml, /id="location-select"/);
   assert.match(reportSource, /scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  assert.match(reportSource, /nearestActiveLocation/);
   assert.ok(mapHtml.indexOf('>View report<') < mapHtml.indexOf('>View map<'));
 });
 
@@ -71,6 +74,21 @@ test('admin location editor preserves immutable location codes', () => {
   assert.match(adminSource,/await updateLocation\(\{id,name:/);
   assert.match(adminHtml,/id="location-coordinate-map"/);
   assert.match(adminSource,/draggable:true/);
+  assert.match(adminHtml,/id="edit-location-list"/);
+  assert.match(adminHtml,/id="delete-location-dialog"/);
+  assert.match(adminSource,/await deleteLocation\(/);
+});
+
+test('nearest mapped location uses a tight downtown radius', () => {
+  const locations = [
+    { id: 'A', name: 'Church Street 1', latitude: 17.9714, longitude: -76.792, is_active: true },
+    { id: 'B', name: 'King Street 1', latitude: 17.9725, longitude: -76.791, is_active: true },
+  ];
+  const nearChurch = nearestActiveLocation(locations, 17.97141, -76.79201, 120);
+  assert.equal(nearChurch.location.id, 'A');
+  assert.ok(nearChurch.distanceMeters < 5);
+  assert.equal(nearestActiveLocation(locations, 18.01, -76.85, 120), null);
+  assert.ok(distanceMeters(17.9714, -76.792, 17.9725, -76.791) > 100);
 });
 
 test('public navigation routes explicitly to map and reporting', () => {
@@ -94,4 +112,5 @@ test('all administrators can delete reports with confirmation', () => {
   assert.match(adminHtml,/id="delete-report-dialog"/);
   assert.match(adminSource,/await deleteReport\(deletingId\)/);
   assert.ok(edgeSource.indexOf("body.action==='delete_report'") < edgeSource.indexOf("member.role!=='owner'"));
+  assert.match(edgeSource,/body\.action==='delete_location'/);
 });

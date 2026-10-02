@@ -1,9 +1,9 @@
 import L from 'leaflet';
-import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, reviewReport, addAdminFollowup, deleteReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
+import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, deleteLocation, reviewReport, addAdminFollowup, deleteReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
 const $ = id => document.getElementById(id);
-let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='';
+let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='', editLocationId='', deleteLocationId='';
 let total=0, queueRequest=0, detailRequest=0, searchTimer;
 let importsLoaded=false, activityLoaded=false, accountsLoaded=false, locationEditorLoaded=false, ready=false, restoreBusy=false, currentUser=null;
 let editorMap=null,editorMarker=null;
@@ -47,11 +47,12 @@ async function renderImports(reset=false) {
   $('imports-more').hidden=chunk.length<20;
 }
 function populateLocationEditor(id='') {
-  const select=$('edit-location-select');
+  if (id) editLocationId=id;
   const query=$('edit-location-search').value.trim().toLowerCase();
   const filtered=locations.filter(location=>!query||(location.name+' '+location.id).toLowerCase().includes(query));
-  select.innerHTML='<option value="">'+(filtered.length?'Choose a location':'No matching locations')+'</option>'+filtered.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(location=>'<option value="'+h(location.id)+'">'+h(location.name)+(location.is_active?'':' (archived)')+'</option>').join('');
-  select.value=id;
+  const sorted=filtered.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<button type="button" class="picker-row" role="option" aria-selected="'+String(location.id===editLocationId)+'" data-location-id="'+h(location.id)+'"><span><strong>'+h(location.name)+'</strong><small>'+h(location.id)+(location.is_active?'':' · archived')+'</small></span></button>').join(''):'<p class="muted empty-picker">No matching locations</p>';
+  if (editLocationId && !sorted.some(location=>location.id===editLocationId)) editLocationId='';
   renderLocationEditor();
 }
 function setEditorCoordinates(latitude,longitude,moveMap=true) {
@@ -72,7 +73,7 @@ function ensureEditorMap(location) {
   requestAnimationFrame(()=>editorMap.invalidateSize({pan:false}));
 }
 function renderLocationEditor() {
-  const location=locations.find(item=>item.id===$('edit-location-select').value);
+  const location=locations.find(item=>item.id===editLocationId);
   $('location-edit-fields').hidden=!location;
   $('location-edit-empty').hidden=Boolean(location);
   message('location-edit-message','');
@@ -90,7 +91,9 @@ function renderLocationEditor() {
   ensureEditorMap(location);
 }
 async function loadLocationEditor(id='') {
-  locations=await loadAdminLocations();locationEditorLoaded=true;populateLocationEditor(id);
+  locations=await loadAdminLocations();locationEditorLoaded=true;
+  $('admin-location-count').textContent=locations.length.toLocaleString()+' mapped locations';
+  populateLocationEditor(id);
 }
 async function renderActivity(reset=false) {
   if(reset) activity=[];
@@ -158,15 +161,27 @@ function bind() {
     await changePassword($('new-password').value); $('password-form').reset();message('password-message','Password updated.');
   },'password-message');
   $('kml-file').onchange=()=>{clearPreview();message('kml-message','');};
-  $('edit-location-search').oninput=()=>populateLocationEditor($('edit-location-select').value);
-  $('edit-location-select').onchange=renderLocationEditor;
+  $('edit-location-search').oninput=()=>populateLocationEditor();
+  $('edit-location-list').onclick=event=>{
+    const row=event.target.closest('[data-location-id]');if(!row)return;
+    editLocationId=row.dataset.locationId;populateLocationEditor();
+  };
   for(const id of ['edit-location-latitude','edit-location-longitude'])$(id).onchange=()=>{
     const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value);
     if(Number.isFinite(latitude)&&Number.isFinite(longitude)&&latitude>=-90&&latitude<=90&&longitude>=-180&&longitude<=180)setEditorCoordinates(latitude,longitude);
   };
   $('reset-location-edit').onclick=renderLocationEditor;
+  $('delete-location-button').onclick=()=>{
+    if(!editLocationId)return;
+    const location=locations.find(item=>item.id===editLocationId);
+    deleteLocationId=editLocationId;
+    $('delete-location-description').textContent=location
+      ? location.name+' ('+location.report_count+' report'+(location.report_count===1?'':'s')+')'
+      : editLocationId;
+    $('delete-location-dialog').returnValue='';$('delete-location-dialog').showModal();
+  };
   $('location-edit-form').onsubmit=event=>handleAction(event,async()=>{
-    const id=$('edit-location-select').value;if(!id)throw new Error('Choose a location first.');
+    const id=editLocationId;if(!id)throw new Error('Choose a location first.');
     const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value),altitude=Number($('edit-location-altitude').value);
     if(!Number.isFinite(latitude)||latitude < -90||latitude > 90)throw new Error('Enter a valid latitude.');
     if(!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error('Enter a valid longitude.');
@@ -238,6 +253,15 @@ function bind() {
       await deleteReport(deletingId);selectedId='';detailRequest++;$('review-panel').hidden=true;
       await reloadQueue();activityLoaded=false;message('admin-warning','Report deleted.');$('admin-warning').hidden=false;$('admin-warning').className='form-message is-success';
     } catch(error){message('status-message',error.message||'Could not delete the report.',true);}
+  });
+  $('delete-location-dialog').addEventListener('close',async()=>{
+    if($('delete-location-dialog').returnValue!=='delete'||!deleteLocationId)return;
+    const removingId=deleteLocationId;
+    try {
+      await deleteLocation(removingId);deleteLocationId='';editLocationId='';
+      await loadLocationEditor();activityLoaded=false;await reloadQueue();
+      message('location-edit-message','Location deleted.');
+    } catch(error){message('location-edit-message',error.message||'Could not delete the location.',true);}
   });
 }
 async function boot() {

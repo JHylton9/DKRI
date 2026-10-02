@@ -1,7 +1,8 @@
 import L from 'leaflet';
 import { loadMapData, locationHistory } from './backend.js';
 import { escapeHtml as h, formatDate } from './shared.js';
-import { filterLocations } from './map-model.js';
+import { filterLocations, nearestActiveLocation } from './map-model.js';
+import { requestDevicePosition, DETECTED_LOCATION_KEY } from './shared.js';
 
 const $ = id => document.getElementById(id);
 const colors = { pending: '#986a2d', down: '#a3292e', fixed: '#32694b', empty: '#686c72' };
@@ -134,6 +135,28 @@ function initMap() {
   });
   new ResizeObserver(()=>map.invalidateSize({pan:true,animate:false})).observe(document.querySelector('.map-surface'));
 }
+async function applyNearestLocationFromDevice() {
+  const params = new URLSearchParams(location.search);
+  if (params.has('location_id') || params.has('submitted')) return;
+  const storedId = sessionStorage.getItem(DETECTED_LOCATION_KEY);
+  if (storedId && locations.some((item) => item.id === storedId)) {
+    await selectLocation(storedId, true);
+    return;
+  }
+  try {
+    const position = await requestDevicePosition();
+    const match = nearestActiveLocation(locations, position.coords.latitude, position.coords.longitude);
+    if (!match) return;
+    sessionStorage.setItem(DETECTED_LOCATION_KEY, match.location.id);
+    await selectLocation(match.location.id, true);
+    $('map-loading').textContent = `Near ${match.location.name} (about ${Math.round(match.distanceMeters)} m).`;
+    $('map-loading').hidden = false;
+    window.setTimeout(() => { $('map-loading').hidden = true; }, 5000);
+  } catch {
+    // Permission denied or unavailable.
+  }
+}
+
 async function boot() {
   const latestToken = sessionStorage.getItem('dkri_latest_report_token');
   if (new URLSearchParams(location.search).get('submitted') === '1' && latestToken) {
@@ -170,6 +193,7 @@ async function boot() {
     $('map-category').insertAdjacentHTML('beforeend',payload.issue_types.map(type=>'<option>'+h(type)+'</option>').join(''));
     $('report-count').textContent=locations.reduce((count,item)=>count+Number(item.report_count),0)+' reports across '+locations.length+' locations';
     update(); fit(); $('map-loading').hidden=true;
+    await applyNearestLocationFromDevice();
   } catch(error) {
     $('map-loading').textContent='Could not load the map. '+error.message;
     $('location-list').innerHTML='<p class="empty-state">Could not load locations.</p><button id="retry-data">Retry</button>';

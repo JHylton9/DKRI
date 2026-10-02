@@ -1,3 +1,18 @@
+export const DETECTED_LOCATION_KEY = 'dkri_detected_location_id';
+
+export function requestDevicePosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not available'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 60000,
+    });
+  });
+}
 
 export function escapeHtml(value) {
   return String(value || "")

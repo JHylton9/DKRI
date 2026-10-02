@@ -182,26 +182,44 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .followup div { display: flex; justify-content: space-between; gap: 16px; }
 .followup time { color: var(--muted); font-size: .75rem; }
 .followup p { margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.account-controls { display: flex; align-items: center; gap: 16px; }
-.account-controls span { overflow-wrap: anywhere; }
+.account-controls,.account-meta { display: flex; align-items: center; gap: 12px; }
+.account-controls span,.account-meta span { overflow-wrap: anywhere; text-align: right; }
+.eyebrow { display: block; font-size: .6875rem; font-weight: 600; letter-spacing: .075em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.field-search { gap: 8px; }
+.picker-results { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); padding: 4px; }
+.picker-results--report { max-height: 240px; }
+.picker-row { width: 100%; min-height: 44px; justify-content: flex-start; text-align: left; padding: 10px 12px; border-color: transparent; background: transparent; font-weight: 400; }
+.picker-row:hover { background: var(--soft); }
+.picker-row[aria-selected="true"],.picker-row[aria-checked="true"] { background: var(--soft); border-color: var(--border); }
+.picker-row strong { display: block; font-weight: 600; font-size: .875rem; }
+.picker-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .75rem; font-weight: 400; overflow-wrap: anywhere; }
+.empty-picker { padding: 12px; margin: 0; }
 .account-invite-form { display: grid; grid-template-columns: minmax(220px,420px) 180px auto; align-items: end; gap: 12px; margin-bottom: 12px; }
 .account-role-help { margin-bottom: 20px; }
 #accounts-message { margin-bottom: 16px; }
 .autosave-note { display: block; margin-top: 5px; }
 .location-editor { display: grid; grid-template-columns: minmax(180px,280px) minmax(0,620px); gap: 32px; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
 .location-editor>div p { margin-top: 8px; }
-.location-picker { display: flex; flex-direction: column; gap: 16px; }
-.location-picker select { min-height: 250px; background-image: none; padding-right: 12px; }
+.location-picker { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.location-picker .picker-results { max-height: 320px; }
 .location-editor-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 #location-coordinate-map { width: 100%; height: 280px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
 .coordinate-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
-.admin-layout { display: grid; grid-template-columns: 180px minmax(0,1fr); min-height: calc(100dvh - 80px); }
-.admin-nav { background: var(--soft); border-right: 1px solid var(--border); padding: 24px 12px; display: flex; flex-direction: column; gap: 4px; }
-.admin-nav a { display: flex; align-items: center; min-height: 44px; padding: 12px; text-decoration: none; font-size: .875rem; border-radius: 6px; }
-.admin-nav a[aria-current=page] { background: var(--surface); color: var(--accent); font-weight: 650; }
-.admin-nav a:hover { background: var(--surface); }
-.admin-nav .public-map-link { margin-top: 24px; color: var(--muted); }
-.admin-content { width: 100%; max-width: 1400px; padding: 36px; min-width: 0; }
+.admin-page { background: var(--surface); }
+.admin-shell { display: grid; grid-template-columns: 180px minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); min-height: 100dvh; }
+.admin-header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 28px; border-bottom: 1px solid var(--border); min-height: 80px; }
+.admin-header .brand { font-size: 1.25rem; }
+.admin-nav { background: var(--soft); border-right: 1px solid var(--border); padding: 24px 12px; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.admin-nav a { display: flex; align-items: center; min-height: 44px; padding: 10px 12px; text-decoration: none; font-size: .8125rem; border-radius: 6px; color: var(--muted); border: 1px solid transparent; }
+.admin-nav a[aria-current=page] { background: var(--surface); color: var(--ink); border-color: var(--border); font-weight: 650; }
+.admin-nav a[aria-current=page]:not(.public-map-link) { color: var(--accent); }
+.admin-nav a:hover { background: var(--surface); color: var(--ink); }
+.admin-nav .public-map-link { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); justify-content: space-between; }
+.admin-nav-meta { margin: 8px 10px 0; font-size: .625rem; color: var(--muted); line-height: 1.5; }
+.admin-content { width: 100%; max-width: 1472px; padding: 36px; min-width: 0; }
+.admin-content .page-heading { margin-bottom: 28px; align-items: flex-start; }
+.admin-content .page-heading h1 { margin-top: 0; }
+.admin-content .page-heading p { margin-top: 8px; }
 .admin-content>#admin-warning { margin-bottom: 24px; }
 .toolbar { display: grid; grid-template-columns: minmax(200px,400px) 180px; gap: 16px; margin-bottom: 24px; }
 .table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
@@ -263,15 +281,16 @@ dialog .actions { margin-top: 24px; justify-content: end; }
   .account-controls { gap: 8px; }
   .account-controls span { max-width: 140px; font-size: .6875rem; }
   .account-controls button { padding: 8px; white-space: nowrap; }
-  .admin-layout { display: block; }
+  .admin-shell { display: block; }
+  .admin-header { padding: 12px 16px; flex-wrap: wrap; }
   .admin-nav { flex-direction: row; overflow-x: auto; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--border); }
   .admin-nav a { white-space: nowrap; padding: 10px 12px; }
-  .admin-nav .public-map-link { margin: 0; }
+  .admin-nav .public-map-link { margin: 0; padding-top: 10px; border-top: 0; }
+  .admin-nav-meta { display: none; }
   .admin-content { padding: 24px 16px; }
   .toolbar { grid-template-columns: minmax(0,1fr) 130px; gap: 12px; }
   .account-invite-form { grid-template-columns: 1fr; }
   .location-editor { grid-template-columns: 1fr; gap: 20px; padding: 16px; }
-  .location-picker select { min-height: 180px; }
   #location-coordinate-map { height: 240px; }
   .coordinate-grid { grid-template-columns: 1fr; }
   .page-heading.section-heading { align-items: start; }

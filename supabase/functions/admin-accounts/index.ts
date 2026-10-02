@@ -35,6 +35,31 @@ Deno.serve(async req=>{
       await service.from('admin_activity').insert({actor_id:user.id,action:'Report deleted',target_id:reportId,detail:{location_id:report.location_id,photo_count:photos.length}});
       return reply({success:true});
     }
+    if(body.action==='delete_location'){
+      const locationId=typeof body.location_id==='string'?body.location_id.trim():'';
+      if(!locationId||locationId.length>500)throw fail('Choose a valid location.');
+      const {data:location,error:locationError}=await service.from('locations').select('id,name').eq('id',locationId).maybeSingle();
+      if(locationError)throw locationError;
+      if(!location)throw fail('Location not found.',404);
+      const {data:reports,error:reportsError}=await service.from('issue_reports').select('id').eq('location_id',locationId);
+      if(reportsError)throw reportsError;
+      let photoCount=0;
+      for(const report of reports||[]){
+        const {data:photos,error:photosError}=await service.from('issue_photos').select('storage_key').eq('report_id',report.id);
+        if(photosError)throw photosError;
+        if(photos?.length){
+          const {error}=await service.storage.from('report-photos').remove(photos.map(photo=>photo.storage_key));
+          if(error)throw error;
+          photoCount+=photos.length;
+        }
+        const {error:deleteReportError}=await service.from('issue_reports').delete().eq('id',report.id);
+        if(deleteReportError)throw deleteReportError;
+      }
+      const {error:deleteLocationError}=await service.from('locations').delete().eq('id',locationId);
+      if(deleteLocationError)throw deleteLocationError;
+      await service.from('admin_activity').insert({actor_id:user.id,action:'Location deleted',target_id:locationId,detail:{name:location.name,report_count:reports?.length||0,photo_count:photoCount}});
+      return reply({success:true});
+    }
     if(member.role!=='owner'||user.email?.toLowerCase()!==primaryOwner)throw fail('This account cannot manage accounts.',403);
     if(body.action==='list'){
       const [{data:members,error:membersError},{data:users,error:usersError}]=await Promise.all([
