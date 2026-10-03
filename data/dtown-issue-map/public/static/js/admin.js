@@ -6,7 +6,7 @@ const $ = id => document.getElementById(id);
 let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='', editLocationId='', deleteLocationId='', bulkSelected=new Set();
 let total=0, queueRequest=0, detailRequest=0, searchTimer;
 let importsLoaded=false, activityLoaded=false, accountsLoaded=false, locationEditorLoaded=false, ready=false, restoreBusy=false, currentUser=null;
-let editorMap=null,editorMarker=null;
+let editorMap=null,editorMarker=null,editorBulkLayer=null;
 function message(id,text,error=false) { $(id).textContent=text; $(id).className='form-message '+(error?'is-error':'is-success'); }
 function badge(status) { return '<span class="status-badge status-badge--'+h(status)+'">'+h(status)+'</span>'; }
 function issueLabel(report) { return report.issue_types.map(type=>type==='Other'&&report.issue_other?'Other: '+report.issue_other:type).join(', '); }
@@ -60,44 +60,83 @@ function populateLocationEditor(id='') {
   const query=$('edit-location-search').value.trim().toLowerCase();
   const filtered=locations.filter(location=>!query||location.name.toLowerCase().includes(query));
   const sorted=filtered.slice().sort((a,b)=>a.name.localeCompare(b.name));
-  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<div class="picker-item'+(location.id===editLocationId?' is-selected':'')+'" data-location-id="'+h(location.id)+'" role="option" aria-selected="'+String(location.id===editLocationId)+'"><label class="picker-bulk"><input type="checkbox" data-bulk-location="'+h(location.id)+'" '+((bulkSelected.has(location.id))?'checked':'')+'><span class="sr-only">Select '+h(location.name)+'</span></label><button type="button" class="picker-row"><span class="picker-row__label">'+h(location.name)+'</span>'+(location.is_active?'':'<span class="picker-meta">Archived</span>')+'</button></div>').join(''):'<p class="muted empty-picker">No matching locations</p>';
+  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<div class="picker-item'+(location.id===editLocationId?' is-selected':'')+(bulkSelected.has(location.id)?' is-bulk-checked':'')+'" data-location-id="'+h(location.id)+'" role="option" aria-selected="'+String(location.id===editLocationId)+'"><label class="picker-bulk"><input type="checkbox" data-bulk-location="'+h(location.id)+'" '+((bulkSelected.has(location.id))?'checked':'')+'><span class="sr-only">Select '+h(location.name)+'</span></label><button type="button" class="picker-row"><span class="picker-row__label">'+h(location.name)+'</span>'+(location.is_active?'':'<span class="picker-meta">Archived</span>')+'</button></div>').join(''):'<p class="muted empty-picker">No matching locations</p>';
   if (editLocationId && !sorted.some(location=>location.id===editLocationId)) editLocationId='';
   updateBulkToolbar();
   renderLocationEditor();
 }
+function mapHighlightIds() {
+  if(bulkSelected.size>0) return [...bulkSelected];
+  return editLocationId?[editLocationId]:[];
+}
 function setEditorCoordinates(latitude,longitude,moveMap=true) {
+  if(!editLocationId) return;
   $('edit-location-latitude').value=Number(latitude).toFixed(6);
   $('edit-location-longitude').value=Number(longitude).toFixed(6);
   editorMarker?.setLatLng([latitude,longitude]);
-  if(moveMap)editorMap?.panTo([latitude,longitude]);
+  if(moveMap) editorMap?.panTo([latitude,longitude],18);
 }
-function ensureEditorMap(location) {
-  const point=[location.latitude,location.longitude];
+function ensureEditorMap() {
   if(!editorMap){
-    editorMap=L.map('location-coordinate-map',{zoomControl:true}).setView(point,18);
+    editorMap=L.map('location-coordinate-map',{zoomControl:true}).setView([17.9714,-76.792],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(editorMap);
-    editorMarker=L.marker(point,{draggable:true}).addTo(editorMap);
+    editorBulkLayer=L.layerGroup().addTo(editorMap);
+    editorMarker=L.marker([17.9714,-76.792],{draggable:true});
     editorMarker.on('dragend',()=>{const point=editorMarker.getLatLng();setEditorCoordinates(point.lat,point.lng,false);});
-    editorMap.on('click',event=>setEditorCoordinates(event.latlng.lat,event.latlng.lng));
-  }else{editorMap.setView(point,18);editorMarker.setLatLng(point);}
+    editorMap.on('click',event=>{if(editLocationId)setEditorCoordinates(event.latlng.lat,event.latlng.lng);});
+  }
   requestAnimationFrame(()=>editorMap.invalidateSize({pan:false}));
+}
+function refreshEditorMap() {
+  const highlights=mapHighlightIds();
+  const location=locations.find(item=>item.id===editLocationId);
+  if(!highlights.length && !location) return;
+  ensureEditorMap();
+  editorBulkLayer.clearLayers();
+  for(const id of highlights){
+    if(id===editLocationId) continue;
+    const item=locations.find(row=>row.id===id);
+    if(!item) continue;
+    L.circleMarker([item.latitude,item.longitude],{radius:7,color:'oklch(47% 0.16 25)',weight:2,fillColor:'oklch(47% 0.16 25)',fillOpacity:.35})
+      .bindTooltip(item.name).addTo(editorBulkLayer);
+  }
+  if(location){
+    editorMarker.setLatLng([location.latitude,location.longitude]);
+    if(!editorMap.hasLayer(editorMarker)) editorMarker.addTo(editorMap);
+  } else if(editorMap.hasLayer(editorMarker)) {
+    editorMap.removeLayer(editorMarker);
+  }
+  const points=highlights.map(id=>locations.find(row=>row.id===id)).filter(Boolean);
+  if(points.length>1){
+    editorMap.fitBounds(L.latLngBounds(points.map(item=>[item.latitude,item.longitude])),{padding:[28,28],maxZoom:17});
+  } else if(location) {
+    editorMap.setView([location.latitude,location.longitude],18);
+  } else if(points[0]) {
+    editorMap.setView([points[0].latitude,points[0].longitude],18);
+  }
 }
 function renderLocationEditor() {
   const location=locations.find(item=>item.id===editLocationId);
+  const highlights=mapHighlightIds();
+  const hasMapPreview=Boolean(location)||highlights.length>0;
   $('location-edit-fields').hidden=!location;
-  $('location-edit-empty').hidden=Boolean(location);
+  $('location-map-preview').hidden=!hasMapPreview;
+  $('location-edit-empty').hidden=Boolean(location)||highlights.length>0;
+  $('location-map-hint').textContent=location
+    ? (highlights.length>1 ? highlights.length+' selected points on the map. Drag the marker to move the location you are editing.' : 'Drag the marker or enter precise coordinates below.')
+    : (highlights.length>1 ? highlights.length+' selected points on the map. Choose a row to edit one.' : 'Selected point on the map. Choose a row to edit it.');
   message('location-edit-message','');
-  if(!location)return;
-  $('edit-location-name').value=location.name;
-  $('edit-location-description').value=location.description||'';
-  $('edit-location-latitude').value=location.latitude;
-  $('edit-location-longitude').value=location.longitude;
-  $('edit-location-altitude').value=location.altitude;
-  $('edit-location-active').checked=location.is_active;
-  $('edit-location-status').textContent=location.is_active?'Active':'Archived';
-  $('edit-location-reports').textContent=location.report_count+' report'+(location.report_count===1?'':'s');
-  $('edit-location-updated').textContent='Updated '+formatDate(location.updated_at);
-  ensureEditorMap(location);
+  if(location){
+    $('edit-location-name').value=location.name;
+    $('edit-location-description').value=location.description||'';
+    $('edit-location-latitude').value=location.latitude;
+    $('edit-location-longitude').value=location.longitude;
+    $('edit-location-active').checked=location.is_active;
+    $('edit-location-status').textContent=location.is_active?'Active':'Archived';
+    $('edit-location-reports').textContent=location.report_count+' report'+(location.report_count===1?'':'s');
+    $('edit-location-updated').textContent='Updated '+formatDate(location.updated_at);
+  }
+  if(hasMapPreview) refreshEditorMap();
 }
 async function loadLocationEditor(id='') {
   locations=await loadAdminLocations();locationEditorLoaded=true;
@@ -180,6 +219,7 @@ function bind() {
     const box=event.target.closest('[data-bulk-location]');if(!box)return;
     if(box.checked) bulkSelected.add(box.dataset.bulkLocation); else bulkSelected.delete(box.dataset.bulkLocation);
     updateBulkToolbar();
+    refreshEditorMap();
   };
   $('select-visible-locations').onchange=event=>{
     const visible=visibleLocationIds();
@@ -207,11 +247,11 @@ function bind() {
   };
   $('location-edit-form').onsubmit=event=>handleAction(event,async()=>{
     const id=editLocationId;if(!id)throw new Error('Choose a location first.');
-    const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value),altitude=Number($('edit-location-altitude').value);
+    const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value);
+    const stored=locations.find(item=>item.id===id);
     if(!Number.isFinite(latitude)||latitude < -90||latitude > 90)throw new Error('Enter a valid latitude.');
     if(!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error('Enter a valid longitude.');
-    if(!Number.isFinite(altitude))throw new Error('Enter a valid altitude.');
-    await updateLocation({id,name:$('edit-location-name').value,description:$('edit-location-description').value,latitude,longitude,altitude,is_active:$('edit-location-active').checked});
+    await updateLocation({id,name:$('edit-location-name').value,description:$('edit-location-description').value,latitude,longitude,altitude:stored?.altitude??0,is_active:$('edit-location-active').checked});
     await loadLocationEditor(id);activityLoaded=false;message('location-edit-message','Location saved. The public map now reflects this change.');
   },'location-edit-message');
   $('kml-upload-form').onsubmit=event=>handleAction(event,async()=>{
