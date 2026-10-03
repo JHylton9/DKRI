@@ -60,7 +60,7 @@ function populateLocationEditor(id='') {
   const query=$('edit-location-search').value.trim().toLowerCase();
   const filtered=locations.filter(location=>!query||location.name.toLowerCase().includes(query));
   const sorted=filtered.slice().sort((a,b)=>a.name.localeCompare(b.name));
-  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<div class="picker-item"><label class="picker-bulk"><input type="checkbox" data-bulk-location="'+h(location.id)+'" '+((bulkSelected.has(location.id))?'checked':'')+'><span class="sr-only">Select '+h(location.name)+'</span></label><button type="button" class="picker-row" role="option" aria-selected="'+String(location.id===editLocationId)+'" data-location-id="'+h(location.id)+'"><span><strong>'+h(location.name)+'</strong>'+(location.is_active?'':'<span class="picker-meta">Archived</span>')+'</span></button></div>').join(''):'<p class="muted empty-picker">No matching locations</p>';
+  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<div class="picker-item'+(location.id===editLocationId?' is-selected':'')+'" data-location-id="'+h(location.id)+'" role="option" aria-selected="'+String(location.id===editLocationId)+'"><label class="picker-bulk"><input type="checkbox" data-bulk-location="'+h(location.id)+'" '+((bulkSelected.has(location.id))?'checked':'')+'><span class="sr-only">Select '+h(location.name)+'</span></label><button type="button" class="picker-row"><span class="picker-row__label">'+h(location.name)+'</span>'+(location.is_active?'':'<span class="picker-meta">Archived</span>')+'</button></div>').join(''):'<p class="muted empty-picker">No matching locations</p>';
   if (editLocationId && !sorted.some(location=>location.id===editLocationId)) editLocationId='';
   updateBulkToolbar();
   renderLocationEditor();
@@ -172,7 +172,8 @@ function bind() {
   $('kml-file').onchange=()=>{clearPreview();message('kml-message','');};
   $('edit-location-search').oninput=()=>populateLocationEditor();
   $('edit-location-list').onclick=event=>{
-    const row=event.target.closest('[data-location-id]');if(!row)return;
+    if(event.target.closest('.picker-bulk')) return;
+    const row=event.target.closest('.picker-item[data-location-id]');if(!row)return;
     editLocationId=row.dataset.locationId;populateLocationEditor();
   };
   $('edit-location-list').onchange=event=>{
