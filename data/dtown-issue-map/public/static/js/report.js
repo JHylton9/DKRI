@@ -1,11 +1,14 @@
+import L from 'leaflet';
 import { loadMapData, submitReport as saveReport } from './backend.js';
 import { nearestActiveLocation } from './map-model.js';
 import { escapeHtml, handleAction, requestDevicePosition, DETECTED_LOCATION_KEY } from './shared.js';
 
 let locations = [];
-let locationQuery = '';
 let selectedLocationId = '';
 let photoPreviewUrls = [];
+let reportMap = null;
+let reportMarker = null;
+let lastDistanceMeters = null;
 
 function statusPill(status) {
   return `<span class="status-pill status-pill--${escapeHtml(status)}">${escapeHtml(status)}</span>`;
@@ -118,60 +121,82 @@ function renderIssueTypes(issueTypes) {
   `).join('');
 }
 
-function filteredLocations() {
-  const query = locationQuery.trim().toLowerCase();
-  if (!query) return locations;
-  return locations.filter((location) => location.name.toLowerCase().includes(query));
-}
-
-function setSelectedLocation(id, { announce = false } = {}) {
-  selectedLocationId = locations.some((location) => location.id === id) ? id : '';
-  document.getElementById('location-id').value = selectedLocationId;
-  renderLocationOptions();
-  renderLocationSummary();
-  if (announce && selectedLocationId) {
-    const status = document.getElementById('location-detect-status');
-    status.hidden = false;
-    status.textContent = `Selected ${getSelectedLocation()?.name || 'location'}. You can search below to change it.`;
-  }
-}
-
-function renderLocationOptions() {
-  const container = document.getElementById('location-options');
-  const items = filteredLocations();
-  if (!locations.length) {
-    container.innerHTML = '<p class="muted">No active locations are available right now.</p>';
-    return;
-  }
-  if (!items.length) {
-    container.innerHTML = '<p class="muted">No locations match your search.</p>';
-    return;
-  }
-  container.innerHTML = items.map((location) => `
-    <button type="button" class="picker-row" role="radio" aria-checked="${location.id === selectedLocationId}" data-location-id="${escapeHtml(location.id)}">
-      <span>
-        <strong>${escapeHtml(location.name)}</strong>
-        <small>${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}</small>
-      </span>
-    </button>
-  `).join('');
-}
-
 function getSelectedLocation() {
   return locations.find((location) => location.id === selectedLocationId) || null;
 }
 
-function renderLocationSummary() {
-  const location = getSelectedLocation();
-  document.getElementById('location-title').textContent = location ? location.name : 'Choose a location';
-  document.getElementById('location-summary').textContent = location
-    ? location.description || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-    : 'Select a mapped location for your report.';
+function updateSubmitState() {
+  document.getElementById('submit-report-button').disabled = !selectedLocationId;
+}
 
-  const pills = document.getElementById('location-pills');
-  pills.innerHTML = location
-    ? `${location.report_count ? statusPill(location.status) : '<span class="pill">No reports</span>'}`
-    : '';
+function ensureReportMap(location) {
+  const point = [location.latitude, location.longitude];
+  if (!reportMap) {
+    reportMap = L.map('report-location-map', { zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false }).setView(point, 18);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(reportMap);
+    reportMarker = L.circleMarker(point, {
+      radius: 10,
+      color: 'oklch(25% 0.012 260)',
+      weight: 2,
+      fillColor: 'oklch(47% 0.16 25)',
+      fillOpacity: 0.9,
+    }).addTo(reportMap);
+    requestAnimationFrame(() => reportMap.invalidateSize({ pan: false }));
+    return;
+  }
+  reportMarker.setLatLng(point);
+  reportMap.setView(point, 18, { animate: false });
+  requestAnimationFrame(() => reportMap.invalidateSize({ pan: false }));
+}
+
+function setSelectedLocation(id, { distanceMeters = null, source = 'detected' } = {}) {
+  selectedLocationId = locations.some((location) => location.id === id) ? id : '';
+  lastDistanceMeters = distanceMeters;
+  document.getElementById('location-id').value = selectedLocationId;
+  document.getElementById('location-error').hidden = true;
+  updateSubmitState();
+
+  const location = getSelectedLocation();
+  const panel = document.getElementById('location-panel');
+  const status = document.getElementById('location-detect-status');
+
+  if (!location) {
+    panel.hidden = true;
+    status.textContent = 'Could not match a mapped location yet.';
+    return;
+  }
+
+  panel.hidden = false;
+  document.getElementById('location-title').textContent = location.name;
+  document.getElementById('location-summary').textContent = location.description
+    || 'Your report will be linked to this mapped point.';
+  document.getElementById('location-pills').innerHTML = location.report_count
+    ? statusPill(location.status)
+    : '<span class="pill">No reports yet</span>';
+
+  if (source === 'map-link') {
+    status.textContent = 'Location set from the public map or a QR link.';
+  } else if (distanceMeters != null) {
+    status.textContent = `Nearest mapped location, about ${Math.round(distanceMeters)} m from you.`;
+  } else {
+    status.textContent = 'Using the nearest mapped location from your last position check.';
+  }
+
+  ensureReportMap(location);
+}
+
+function setLocationFailure(message) {
+  selectedLocationId = '';
+  document.getElementById('location-id').value = '';
+  document.getElementById('location-panel').hidden = true;
+  document.getElementById('location-detect-status').textContent = message;
+  const error = document.getElementById('location-error');
+  error.hidden = false;
+  error.innerHTML = `${escapeHtml(message)} <a href="/map">Open the map</a> if you need to check nearby points.`;
+  updateSubmitState();
 }
 
 function syncOtherIssue() {
@@ -227,31 +252,38 @@ function applyLocationPrefill() {
   const prefillId = new URLSearchParams(window.location.search).get('location_id');
   if (!prefillId) return false;
   if (!locations.find((location) => location.id === prefillId)) return false;
-
-  setSelectedLocation(prefillId);
-  const prefill = document.getElementById('location-prefill');
-  prefill.hidden = false;
-  prefill.textContent = 'Location preselected from a map or QR-linked entry. You can still change it if needed.';
+  sessionStorage.setItem(DETECTED_LOCATION_KEY, prefillId);
+  setSelectedLocation(prefillId, { source: 'map-link' });
   return true;
 }
 
-async function applyNearestLocationFromDevice() {
-  if (applyLocationPrefill()) return;
-  const storedId = sessionStorage.getItem(DETECTED_LOCATION_KEY);
-  if (storedId && locations.some((location) => location.id === storedId)) {
-    setSelectedLocation(storedId, { announce: true });
-    return;
+async function resolveLocationFromDevice({ forceFresh = false } = {}) {
+  document.getElementById('location-detect-status').textContent = 'Finding the nearest mapped location…';
+  document.getElementById('location-error').hidden = true;
+
+  if (!forceFresh && applyLocationPrefill()) return;
+
+  if (!forceFresh) {
+    const storedId = sessionStorage.getItem(DETECTED_LOCATION_KEY);
+    if (storedId && locations.some((location) => location.id === storedId)) {
+      setSelectedLocation(storedId);
+      return;
+    }
+  } else {
+    sessionStorage.removeItem(DETECTED_LOCATION_KEY);
   }
+
   try {
     const position = await requestDevicePosition();
     const match = nearestActiveLocation(locations, position.coords.latitude, position.coords.longitude);
-    if (!match) return;
+    if (!match) {
+      setLocationFailure('No mapped location is close enough. Move nearer to a downtown reporting point, then refresh.');
+      return;
+    }
     sessionStorage.setItem(DETECTED_LOCATION_KEY, match.location.id);
-    setSelectedLocation(match.location.id, { announce: true });
-    const status = document.getElementById('location-detect-status');
-    status.textContent = `Using your position: ${match.location.name} (about ${Math.round(match.distanceMeters)} m away).`;
+    setSelectedLocation(match.location.id, { distanceMeters: match.distanceMeters });
   } catch {
-    // Location permission denied or unavailable; manual selection still works.
+    setLocationFailure('Location access is needed to match the nearest reporting point. Allow location in your browser, then refresh.');
   }
 }
 
@@ -263,7 +295,7 @@ async function submitReport(event) {
   const photoFiles = Array.from(getPhotoInput().files || []);
 
   if (!selectedLocationId) {
-    showFieldError('Choose a location first.', 'location-search');
+    showFieldError('Wait for your mapped location, or refresh your position.', 'refresh-location-button');
     return;
   }
   if (!checkedIssueTypes.length) {
@@ -313,16 +345,8 @@ async function submitReport(event) {
 }
 
 function bindEvents() {
-  document.getElementById('location-search').addEventListener('input', (event) => {
-    locationQuery = event.target.value;
-    renderLocationOptions();
-  });
-  document.getElementById('location-options').addEventListener('click', (event) => {
-    const row = event.target.closest('[data-location-id]');
-    if (!row) return;
-    setSelectedLocation(row.dataset.locationId);
-    document.getElementById('location-prefill').hidden = true;
-    document.getElementById('location-detect-status').hidden = true;
+  document.getElementById('refresh-location-button').addEventListener('click', () => {
+    resolveLocationFromDevice({ forceFresh: true });
   });
   document.getElementById('contact-method').addEventListener('change', syncContactField);
   document.getElementById('issue-type-list').addEventListener('change', syncOtherIssue);
@@ -335,14 +359,13 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   syncContactField();
+  updateSubmitState();
   try {
     const payload = await loadMapData();
     locations = payload.locations || [];
     renderIssueTypes(payload.issue_types || []);
     syncOtherIssue();
-    renderLocationOptions();
-    renderLocationSummary();
-    await applyNearestLocationFromDevice();
+    await resolveLocationFromDevice();
   } catch (error) {
     setMessage(error.message || 'Could not load the report form.', 'error');
   }

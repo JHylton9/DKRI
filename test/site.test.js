@@ -60,18 +60,21 @@ test('report validation stays in-page and submission prioritizes report tracking
   const mapHtml = readFileSync('data/dtown-issue-map/public/map.html', 'utf8');
   const reportSource = readFileSync('data/dtown-issue-map/public/static/js/report.js', 'utf8');
   assert.match(reportHtml, /id="report-form"[^>]+novalidate/);
-  assert.match(reportHtml, /id="location-options"/);
+  assert.match(reportHtml, /id="report-location-map"/);
   assert.doesNotMatch(reportHtml, /id="location-select"/);
   assert.match(reportSource, /scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
   assert.match(reportSource, /nearestActiveLocation/);
+  assert.match(reportSource, /resolveLocationFromDevice/);
   assert.ok(mapHtml.indexOf('>View report<') < mapHtml.indexOf('>View map<'));
 });
 
 test('admin location editor preserves immutable location codes', () => {
   const adminHtml=readFileSync('data/dtown-issue-map/public/admin.html','utf8');
   const adminSource=readFileSync('data/dtown-issue-map/public/static/js/admin.js','utf8');
-  assert.match(adminHtml,/id="edit-location-code" disabled/);
+  assert.doesNotMatch(adminHtml,/id="edit-location-code"/);
+  assert.match(adminHtml,/id="delete-selected-locations"/);
   assert.match(adminSource,/await updateLocation\(\{id,name:/);
+  assert.match(adminSource,/await deleteLocations\(/);
   assert.match(adminHtml,/id="location-coordinate-map"/);
   assert.match(adminSource,/draggable:true/);
   assert.match(adminHtml,/id="edit-location-list"/);
@@ -113,4 +116,5 @@ test('all administrators can delete reports with confirmation', () => {
   assert.match(adminSource,/await deleteReport\(deletingId\)/);
   assert.ok(edgeSource.indexOf("body.action==='delete_report'") < edgeSource.indexOf("member.role!=='owner'"));
   assert.match(edgeSource,/body\.action==='delete_location'/);
+  assert.match(edgeSource,/body\.action==='delete_locations'/);
 });

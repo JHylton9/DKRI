@@ -35,9 +35,7 @@ Deno.serve(async req=>{
       await service.from('admin_activity').insert({actor_id:user.id,action:'Report deleted',target_id:reportId,detail:{location_id:report.location_id,photo_count:photos.length}});
       return reply({success:true});
     }
-    if(body.action==='delete_location'){
-      const locationId=typeof body.location_id==='string'?body.location_id.trim():'';
-      if(!locationId||locationId.length>500)throw fail('Choose a valid location.');
+    const purgeLocation=async(locationId:string)=>{
       const {data:location,error:locationError}=await service.from('locations').select('id,name').eq('id',locationId).maybeSingle();
       if(locationError)throw locationError;
       if(!location)throw fail('Location not found.',404);
@@ -58,7 +56,22 @@ Deno.serve(async req=>{
       const {error:deleteLocationError}=await service.from('locations').delete().eq('id',locationId);
       if(deleteLocationError)throw deleteLocationError;
       await service.from('admin_activity').insert({actor_id:user.id,action:'Location deleted',target_id:locationId,detail:{name:location.name,report_count:reports?.length||0,photo_count:photoCount}});
+      return {name:location.name,report_count:reports?.length||0,photo_count:photoCount};
+    };
+    if(body.action==='delete_location'){
+      const locationId=typeof body.location_id==='string'?body.location_id.trim():'';
+      if(!locationId||locationId.length>500)throw fail('Choose a valid location.');
+      await purgeLocation(locationId);
       return reply({success:true});
+    }
+    if(body.action==='delete_locations'){
+      const ids=Array.isArray(body.location_ids)?body.location_ids.filter((id:unknown)=>typeof id==='string'&&id.trim()&&id.length<=500).map((id:string)=>id.trim()):[];
+      if(!ids.length)throw fail('Choose at least one location.');
+      if(ids.length>100)throw fail('Delete up to 100 locations at a time.');
+      const unique=[...new Set(ids)];
+      const deleted=[];
+      for(const locationId of unique)deleted.push(await purgeLocation(locationId));
+      return reply({success:true,deleted_count:unique.length});
     }
     if(member.role!=='owner'||user.email?.toLowerCase()!==primaryOwner)throw fail('This account cannot manage accounts.',403);
     if(body.action==='list'){

@@ -48,6 +48,7 @@ export const setAccountRole = (userId, role) => adminAccountAction({ action: 'se
 export const deleteAccount = userId => adminAccountAction({ action: 'delete_account', user_id: userId });
 export const deleteReport = reportId => adminAccountAction({ action: 'delete_report', report_id: reportId });
 export const deleteLocation = locationId => adminAccountAction({ action: 'delete_location', location_id: locationId });
+export const deleteLocations = locationIds => adminAccountAction({ action: 'delete_locations', location_ids: locationIds });
 export async function submitReport(form) {
   const { data, error } = await supabase.functions.invoke('submit-report', { body: form });
   if (error) {

@@ -1,9 +1,9 @@
 import L from 'leaflet';
-import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, deleteLocation, reviewReport, addAdminFollowup, deleteReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
+import { adminSession, loadReportPage, loadReportDetail, loadAdminLocations, updateLocation, deleteLocation, deleteLocations, reviewReport, addAdminFollowup, deleteReport, previewKml, publishInventory, loadImports, restoreInventory, loadActivity, loadAccounts, registerAccount, setAccountRole, deleteAccount, signOut, changePassword } from './backend.js';
 import { escapeHtml as h, formatDate, handleAction } from './shared.js';
 import { importChanges } from './map-model.js';
 const $ = id => document.getElementById(id);
-let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='', editLocationId='', deleteLocationId='';
+let locations=[], reports=[], selectedId='', page=0, inventory=null, versions=[], activity=[], restoreId='', deleteAccountId='', editLocationId='', deleteLocationId='', bulkSelected=new Set();
 let total=0, queueRequest=0, detailRequest=0, searchTimer;
 let importsLoaded=false, activityLoaded=false, accountsLoaded=false, locationEditorLoaded=false, ready=false, restoreBusy=false, currentUser=null;
 let editorMap=null,editorMarker=null;
@@ -13,7 +13,7 @@ function issueLabel(report) { return report.issue_types.map(type=>type==='Other'
 function followups(rows) { return rows.map(row=>'<article class="followup"><div><strong>'+(row.author==='admin'?'Review team':'Reporter')+'</strong><time>'+h(formatDate(row.created_at))+'</time></div><p>'+h(row.message)+'</p></article>').join('')||'<p class="muted">No public followups yet.</p>'; }
 function renderQueue() {
   $('queue-summary').textContent=total+' reports matching your filters';
-  $('reports-table-body').innerHTML=reports.map(report=>'<tr class="'+(report.id===selectedId?'is-selected':'')+'"><td><strong>'+h(report.location_name)+'</strong><div class="metadata">'+h(report.location_id)+'</div></td><td>'+h(issueLabel(report)||'Not recorded')+(report.followup_count?'<div class="metadata">'+report.followup_count+' followup'+(report.followup_count===1?'':'s')+'</div>':'')+'</td><td>'+badge(report.status)+'</td><td>'+h(formatDate(report.submitted_at))+'</td><td><button data-review="'+h(report.id)+'" aria-label="Review report for '+h(report.location_name)+'">Review</button></td></tr>').join('') || '<tr><td colspan="5" class="empty-state">No reports match your filters.</td></tr>';
+  $('reports-table-body').innerHTML=reports.map(report=>'<tr class="'+(report.id===selectedId?'is-selected':'')+'"><td><strong>'+h(report.location_name)+'</strong></td><td>'+h(issueLabel(report)||'Not recorded')+(report.followup_count?'<div class="metadata">'+report.followup_count+' followup'+(report.followup_count===1?'':'s')+'</div>':'')+'</td><td>'+badge(report.status)+'</td><td>'+h(formatDate(report.submitted_at))+'</td><td><button data-review="'+h(report.id)+'" aria-label="Review report for '+h(report.location_name)+'">Review</button></td></tr>').join('') || '<tr><td colspan="5" class="empty-state">No reports match your filters.</td></tr>';
   $('queue-page').textContent=total+' results · Page '+(page+1)+' of '+Math.max(1,Math.ceil(total/20));
   $('queue-previous').disabled=page===0; $('queue-next').disabled=(page+1)*20>=total;
 }
@@ -46,13 +46,23 @@ async function renderImports(reset=false) {
   $('import-history').innerHTML=versions.map(version=>'<tr><td>'+h(version.filename)+'</td><td>'+h(formatDate(version.imported_at))+'</td><td>'+(version.point_count??'Legacy')+'</td><td><span class="pill">'+(version.is_current?'Current':'Archived')+'</span></td><td>'+(version.point_count&&!version.is_current?'<button data-restore="'+h(version.id)+'">Restore</button>':'<span class="metadata">'+(version.is_current?'Published':'Original KML retained')+'</span>')+'</td></tr>').join('') || '<tr><td colspan="5">No published inventories.</td></tr>';
   $('imports-more').hidden=chunk.length<20;
 }
+function visibleLocationIds() {
+  const query=$('edit-location-search').value.trim().toLowerCase();
+  return locations.filter(location=>!query||location.name.toLowerCase().includes(query)).map(location=>location.id);
+}
+function updateBulkToolbar() {
+  $('delete-selected-locations').disabled=bulkSelected.size===0;
+  const visible=visibleLocationIds();
+  $('select-visible-locations').checked=visible.length>0&&visible.every(id=>bulkSelected.has(id));
+}
 function populateLocationEditor(id='') {
   if (id) editLocationId=id;
   const query=$('edit-location-search').value.trim().toLowerCase();
-  const filtered=locations.filter(location=>!query||(location.name+' '+location.id).toLowerCase().includes(query));
+  const filtered=locations.filter(location=>!query||location.name.toLowerCase().includes(query));
   const sorted=filtered.slice().sort((a,b)=>a.name.localeCompare(b.name));
-  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<button type="button" class="picker-row" role="option" aria-selected="'+String(location.id===editLocationId)+'" data-location-id="'+h(location.id)+'"><span><strong>'+h(location.name)+'</strong><small>'+h(location.id)+(location.is_active?'':' · archived')+'</small></span></button>').join(''):'<p class="muted empty-picker">No matching locations</p>';
+  $('edit-location-list').innerHTML=sorted.length?sorted.map(location=>'<div class="picker-item"><label class="picker-bulk"><input type="checkbox" data-bulk-location="'+h(location.id)+'" '+((bulkSelected.has(location.id))?'checked':'')+'><span class="sr-only">Select '+h(location.name)+'</span></label><button type="button" class="picker-row" role="option" aria-selected="'+String(location.id===editLocationId)+'" data-location-id="'+h(location.id)+'"><span><strong>'+h(location.name)+'</strong>'+(location.is_active?'':'<span class="picker-meta">Archived</span>')+'</span></button></div>').join(''):'<p class="muted empty-picker">No matching locations</p>';
   if (editLocationId && !sorted.some(location=>location.id===editLocationId)) editLocationId='';
+  updateBulkToolbar();
   renderLocationEditor();
 }
 function setEditorCoordinates(latitude,longitude,moveMap=true) {
@@ -78,7 +88,6 @@ function renderLocationEditor() {
   $('location-edit-empty').hidden=Boolean(location);
   message('location-edit-message','');
   if(!location)return;
-  $('edit-location-code').value=location.id;
   $('edit-location-name').value=location.name;
   $('edit-location-description').value=location.description||'';
   $('edit-location-latitude').value=location.latitude;
@@ -166,6 +175,21 @@ function bind() {
     const row=event.target.closest('[data-location-id]');if(!row)return;
     editLocationId=row.dataset.locationId;populateLocationEditor();
   };
+  $('edit-location-list').onchange=event=>{
+    const box=event.target.closest('[data-bulk-location]');if(!box)return;
+    if(box.checked) bulkSelected.add(box.dataset.bulkLocation); else bulkSelected.delete(box.dataset.bulkLocation);
+    updateBulkToolbar();
+  };
+  $('select-visible-locations').onchange=event=>{
+    const visible=visibleLocationIds();
+    if(event.target.checked) visible.forEach(id=>bulkSelected.add(id)); else visible.forEach(id=>bulkSelected.delete(id));
+    populateLocationEditor();
+  };
+  $('delete-selected-locations').onclick=()=>{
+    if(!bulkSelected.size)return;
+    $('delete-locations-description').textContent=bulkSelected.size+' location'+(bulkSelected.size===1?'':'s')+' selected, including any report history attached to them.';
+    $('delete-locations-dialog').returnValue='';$('delete-locations-dialog').showModal();
+  };
   for(const id of ['edit-location-latitude','edit-location-longitude'])$(id).onchange=()=>{
     const latitude=Number($('edit-location-latitude').value),longitude=Number($('edit-location-longitude').value);
     if(Number.isFinite(latitude)&&Number.isFinite(longitude)&&latitude>=-90&&latitude<=90&&longitude>=-180&&longitude<=180)setEditorCoordinates(latitude,longitude);
@@ -195,7 +219,7 @@ function bind() {
     inventory=await previewKml(file); locations=await loadAdminLocations();
     const changes=importChanges(inventory.points,locations);
     $('import-summary').textContent=inventory.filename+' · '+inventory.points.length+' locations · '+changes.added+' added, '+changes.retained+' retained, '+changes.archived+' archived.';
-    $('preview-rows').innerHTML=inventory.points.slice(0,10).map(point=>'<tr><td>'+h(point.id)+'</td><td>'+h(point.name)+'</td><td>'+point.latitude.toFixed(6)+'</td><td>'+point.longitude.toFixed(6)+'</td></tr>').join('');
+    $('preview-rows').innerHTML=inventory.points.slice(0,10).map(point=>'<tr><td>'+h(point.name)+'</td><td>'+point.latitude.toFixed(6)+'</td><td>'+point.longitude.toFixed(6)+'</td></tr>').join('');
     $('import-preview').hidden=false;message('kml-message','File validated. Review the preview before publishing.');
   },'kml-message');
   $('cancel-import').onclick=()=>{clearPreview();$('kml-upload-form').reset();message('kml-message','Import cancelled. The map has not changed.');};
@@ -258,10 +282,19 @@ function bind() {
     if($('delete-location-dialog').returnValue!=='delete'||!deleteLocationId)return;
     const removingId=deleteLocationId;
     try {
-      await deleteLocation(removingId);deleteLocationId='';editLocationId='';
+      await deleteLocation(removingId);deleteLocationId='';editLocationId='';bulkSelected.delete(removingId);
       await loadLocationEditor();activityLoaded=false;await reloadQueue();
       message('location-edit-message','Location deleted.');
     } catch(error){message('location-edit-message',error.message||'Could not delete the location.',true);}
+  });
+  $('delete-locations-dialog').addEventListener('close',async()=>{
+    if($('delete-locations-dialog').returnValue!=='delete'||!bulkSelected.size)return;
+    const ids=[...bulkSelected];
+    try {
+      await deleteLocations(ids);bulkSelected.clear();editLocationId='';
+      await loadLocationEditor();activityLoaded=false;await reloadQueue();
+      message('location-edit-message',ids.length+' location'+(ids.length===1?'':'s')+' deleted.');
+    } catch(error){message('location-edit-message',error.message||'Could not delete the selected locations.',true);}
   });
 }
 async function boot() {
